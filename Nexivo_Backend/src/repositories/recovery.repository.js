@@ -220,7 +220,7 @@ export async function listPriorObservations(patientId, current, limit, client) {
 // ── Scores ──
 
 const SCORE_COLUMNS = `id, observation_id, patient_id, config_id, composite, baseline, slope, expected, category,
-  limited_history, to_json(computed_at) AS computed_at`;
+  limited_history, contributions, explanation, recommendation, to_json(computed_at) AS computed_at`;
 
 /**
  * Insert a score; with `skipExisting`, a row that already exists for this
@@ -229,8 +229,9 @@ const SCORE_COLUMNS = `id, observation_id, patient_id, config_id, composite, bas
 export async function insertScore(s, client, { skipExisting = false } = {}) {
   const { rows } = await query(
     `INSERT INTO recovery_scores
-       (observation_id, patient_id, config_id, composite, baseline, slope, expected, category, limited_history)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       (observation_id, patient_id, config_id, composite, baseline, slope, expected, category, limited_history,
+        contributions, explanation, recommendation)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      ${skipExisting ? 'ON CONFLICT (observation_id, config_id) DO NOTHING' : ''}
      RETURNING ${SCORE_COLUMNS}`,
     [
@@ -243,6 +244,9 @@ export async function insertScore(s, client, { skipExisting = false } = {}) {
       s.expected,
       s.category,
       s.limitedHistory,
+      JSON.stringify(s.contributions),
+      s.explanation,
+      s.recommendation,
     ],
     client,
   );
@@ -270,4 +274,88 @@ export async function insertActiveConfig({ version, params }, client) {
 export async function listProfiles(client) {
   const { rows } = await query(`SELECT ${PROFILE_COLUMNS} FROM recovery_profiles ORDER BY patient_id`, [], client);
   return rows;
+}
+
+// ── Alerts ──
+
+const ALERT_COLUMNS = `id, patient_id, observation_id, type, parameter, severity, message, details, status,
+  acknowledged_by, to_json(acknowledged_at) AS acknowledged_at, to_json(resolved_at) AS resolved_at,
+  to_json(created_at) AS created_at, to_json(last_seen_at) AS last_seen_at`;
+
+/**
+ * Insert an alert, or update the unresolved one for the same patient + type +
+ * parameter (latest severity, message, details; last_seen_at = now). Status and
+ * the first observation_id are kept.
+ */
+export async function upsertAlert(a, client) {
+  const { rows } = await query(
+    `INSERT INTO recovery_alerts (patient_id, observation_id, type, parameter, severity, message, details)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (patient_id, type, (COALESCE(parameter, ''))) WHERE status <> 'resolved' DO UPDATE
+       SET severity = EXCLUDED.severity, message = EXCLUDED.message, details = EXCLUDED.details, last_seen_at = now()
+     RETURNING ${ALERT_COLUMNS}`,
+    [a.patientId, a.observationId, a.type, a.parameter, a.severity, a.message, JSON.stringify(a.details)],
+    client,
+  );
+  return rows[0];
+}
+
+/** Newest activity first; `status` null for all. ORDER BY is qualified: the bare name is the to_json() alias. */
+export async function listAlerts(patientId, status, client) {
+  const { rows } = await query(
+    `SELECT ${ALERT_COLUMNS} FROM recovery_alerts a
+      WHERE patient_id = $1 AND ($2::varchar IS NULL OR status = $2)
+      ORDER BY a.last_seen_at DESC, a.id DESC`,
+    [patientId, status],
+    client,
+  );
+  return rows;
+}
+
+export async function findAlertForUpdate(id, client) {
+  const { rows } = await query(`SELECT ${ALERT_COLUMNS} FROM recovery_alerts WHERE id = $1 FOR UPDATE`, [id], client);
+  return rows[0] ?? null;
+}
+
+/**
+ * acknowledged: records who (a patient's user id, or NULL for a clinician) and when.
+ * resolved: records when.
+ */
+export async function setAlertStatus(id, status, patientId, client) {
+  const { rows } = await query(
+    `UPDATE recovery_alerts
+        SET status = $2::varchar,
+            acknowledged_at = CASE WHEN $2::varchar = 'acknowledged' THEN now() ELSE acknowledged_at END,
+            acknowledged_by = CASE WHEN $2::varchar = 'acknowledged'
+                                   THEN (SELECT user_id FROM patients WHERE id = $3) ELSE acknowledged_by END,
+            resolved_at = CASE WHEN $2::varchar = 'resolved' THEN now() ELSE resolved_at END
+      WHERE id = $1
+      RETURNING ${ALERT_COLUMNS}`,
+    [id, status, patientId],
+    client,
+  );
+  return rows[0];
+}
+
+/**
+ * The score of the patient's latest check-in (latest versions only); when that
+ * check-in has scores from several configs, the active config's (else the newest).
+ */
+export async function findLatestScore(patientId, client) {
+  const { rows } = await query(
+    `SELECT s.id, s.observation_id, s.patient_id, s.config_id, s.composite, s.baseline, s.slope, s.expected,
+            s.category, s.limited_history, s.contributions, s.explanation, s.recommendation,
+            to_json(s.computed_at) AS computed_at, c.version AS config_version,
+            to_json(o.observed_at) AS observed_at, o.day_post_op
+       FROM recovery_scores s
+       JOIN recovery_observations o ON o.id = s.observation_id
+       JOIN scoring_configs c ON c.id = s.config_id
+      WHERE s.patient_id = $1
+        AND NOT EXISTS (SELECT 1 FROM recovery_observations n WHERE n.corrects_observation_id = o.id)
+      ORDER BY o.observed_at DESC, o.id DESC, c.active DESC, s.computed_at DESC
+      LIMIT 1`,
+    [patientId],
+    client,
+  );
+  return rows[0] ?? null;
 }

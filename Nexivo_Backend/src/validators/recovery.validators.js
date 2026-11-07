@@ -84,3 +84,7 @@ export const milestoneBody = z.object({
 });
 
 export const milestonePatch = z.object({ completed: z.boolean() });
+
+export const alertsQuery = z.object({ status: z.enum(['open', 'acknowledged', 'resolved']).optional() });
+
+export const alertPatch = z.object({ status: z.enum(['acknowledged', 'resolved']) });

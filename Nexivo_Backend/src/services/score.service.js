@@ -1,9 +1,10 @@
-// Nexivo M2: turn stored observations into engine input, score them, store the
-// result. Shared by live check-ins (observation.service.js) and rescoring
-// (scripts/recompute-scores.js), so both score exactly the same way.
+// Nexivo M2 + M3: turn stored observations into engine input, assess them
+// (score, alerts, category), store the result. Shared by live check-ins
+// (observation.service.js) and rescoring (scripts/recompute-scores.js), so both
+// score exactly the same way. Only live check-ins store alerts.
 
 import { withTransaction } from '../db/tx.js';
-import { scoreObservation } from '../engine/score.js';
+import { assess } from '../engine/index.js';
 import {
   findActiveConfig,
   insertScore,
@@ -11,6 +12,7 @@ import {
   listMilestones,
   listPriorObservations,
   listProfiles,
+  upsertAlert,
 } from '../repositories/recovery.repository.js';
 
 /**
@@ -29,10 +31,11 @@ export function milestoneCounts(milestones, observation) {
   };
 }
 
-function score(history, observation, milestones, profile, config) {
+function run(history, observation, milestones, profile, config) {
   const withCounts = (o) => ({ ...o, ...milestoneCounts(milestones, o) });
-  return scoreObservation(history.map(withCounts), withCounts(observation), config.params, {
+  return assess(history.map(withCounts), withCounts(observation), config.params, {
     expectedRecoveryDays: profile.expected_recovery_days,
+    milestones,
   });
 }
 
@@ -46,28 +49,41 @@ const toRow = (result, observation, config) => ({
   expected: result.expected,
   category: result.category,
   limitedHistory: result.limited_history,
+  contributions: result.contributions,
+  explanation: result.explanation,
+  recommendation: result.recommendation,
 });
 
 /**
- * Score a just-saved observation using only the observations before it.
- * Call inside the transaction that saved it.
+ * Assess a just-saved observation using only the observations before it: store
+ * its score and its alerts (an unresolved alert of the same patient + type +
+ * parameter is updated instead of duplicated). Call inside the transaction that saved it.
  *
  * @param {object} observation the inserted row
  * @param {object} profile the patient's recovery profile
  * @param {{ id: number, params: object }} config the active scoring config
  * @param {import('pg').PoolClient} client
+ * @returns {Promise<{ score: object, alerts: object[] }>}
  */
-export async function scoreNewObservation(observation, profile, config, client) {
-  const limit = Math.max(config.params.window_k, config.params.min_history);
+export async function assessNewObservation(observation, profile, config, client) {
+  const p = config.params;
+  const limit = Math.max(p.window_k, p.min_history, p.no_improvement_window - 1);
   const history = await listPriorObservations(observation.patient_id, observation, limit, client);
   const milestones = await listMilestones(observation.patient_id, client);
-  return insertScore(toRow(score(history, observation, milestones, profile, config), observation, config), client);
+  const result = run(history, observation, milestones, profile, config);
+  const score = await insertScore(toRow(result, observation, config), client);
+  const alerts = [];
+  for (const a of result.alerts) {
+    alerts.push(await upsertAlert({ ...a, patientId: observation.patient_id, observationId: observation.id }, client));
+  }
+  return { score, alerts };
 }
 
 /**
  * Score every patient's current observations (latest versions) with the active
  * config, replaying each history in time order. Existing rows for that config
- * are kept as they are; older configs' rows are never touched.
+ * are kept as they are; older configs' rows are never touched. Alerts count
+ * toward the category as usual but are not stored again.
  *
  * @returns {Promise<{ configVersion: string, patients: number, inserted: number, skipped: number }>}
  */
@@ -79,7 +95,7 @@ export async function recomputeAllScores() {
       const observations = await listLatestObservations(profile.patient_id, {}, client);
       const milestones = await listMilestones(profile.patient_id, client);
       for (const [i, observation] of observations.entries()) {
-        const result = score(observations.slice(0, i), observation, milestones, profile, config);
+        const result = run(observations.slice(0, i), observation, milestones, profile, config);
         const row = await insertScore(toRow(result, observation, config), client, { skipExisting: true });
         totals[row ? 'inserted' : 'skipped'] += 1;
       }

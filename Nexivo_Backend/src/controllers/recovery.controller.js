@@ -7,10 +7,13 @@ import {
   addMilestone,
   createConfig,
   getActiveConfig,
+  getLatestScore,
   getProfile,
+  listAlerts,
   listMilestones,
   saveProfile,
   setMilestoneDone,
+  updateAlertStatus,
 } from '../services/recovery.service.js';
 import { sendJson } from '../utils/djangoResponses.js';
 import { fieldErrors } from '../validators/exercise.validators.js';
@@ -80,6 +83,20 @@ export function createRecoveryController() {
 
     async addMilestone(req, res) {
       sendJson(res, 201, await addMilestone(req.validated.params.id, req.validated.body));
+    },
+
+    async latestScore(req, res) {
+      sendJson(res, 200, await getLatestScore(req.validated.params.id));
+    },
+
+    async listAlerts(req, res) {
+      sendJson(res, 200, await listAlerts(req.validated.params.id, req.validated.query.status));
+    },
+
+    async patchAlert(req, res) {
+      const alert = await updateAlertStatus(req.validated.params.id, req.validated.body.status, actor(req));
+      req.log.info({ patientId: alert.patient_id, alertId: alert.id, status: alert.status }, 'alert status changed');
+      sendJson(res, 200, alert);
     },
 
     async patchMilestone(req, res) {

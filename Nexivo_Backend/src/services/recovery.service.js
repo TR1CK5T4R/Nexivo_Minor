@@ -8,6 +8,8 @@
 import { withTransaction } from '../db/tx.js';
 import {
   findActiveConfig,
+  findAlertForUpdate,
+  findLatestScore,
   findMilestone,
   findProfile,
   findProfileForUpdate,
@@ -15,8 +17,10 @@ import {
   hasObservations,
   insertActiveConfig,
   insertMilestones,
+  listAlerts as listAlertRows,
   listMilestones as listMilestoneRows,
   lockPatient,
+  setAlertStatus,
   setMilestoneCompleted,
   upsertProfile,
 } from '../repositories/recovery.repository.js';
@@ -121,4 +125,31 @@ export async function setMilestoneDone(milestoneId, completed, actor) {
   if (!milestone) throw notFound('Milestone');
   assertOwner(actor, milestone.patient_id);
   return setMilestoneCompleted(milestoneId, completed);
+}
+
+export async function listAlerts(patientId, status = null) {
+  await assertPatient(patientId);
+  return listAlertRows(patientId, status);
+}
+
+// Alerts only move forward.
+const NEXT_STATUS = { open: ['acknowledged', 'resolved'], acknowledged: ['resolved'], resolved: [] };
+
+export async function updateAlertStatus(alertId, status, actor) {
+  return withTransaction(async (client) => {
+    const alert = await findAlertForUpdate(alertId, client);
+    if (!alert) throw notFound('Alert');
+    assertOwner(actor, alert.patient_id);
+    if (!NEXT_STATUS[alert.status].includes(status))
+      throw new AppError(409, { error: `Alert is ${alert.status}; it cannot become ${status}` });
+    return setAlertStatus(alertId, status, actor.patientId, client);
+  });
+}
+
+/** The current score with its factors, explanation and recommendation. */
+export async function getLatestScore(patientId) {
+  await assertPatient(patientId);
+  const score = await findLatestScore(patientId);
+  if (!score) throw notFound('Score');
+  return score;
 }

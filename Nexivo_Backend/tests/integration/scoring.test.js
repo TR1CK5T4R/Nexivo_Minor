@@ -99,14 +99,14 @@ describe('POST /api/config/scoring', () => {
   it('rejects weights that do not sum to 1.0 and unknown settings (400)', async () => {
     const params = await current();
     const badWeights = await c.post('/api/config/scoring', {
-      version: 'nexivo-1.1',
+      version: 'test-2.0',
       params: { ...params, weights: { ...params.weights, pain: 0.5 } },
     });
     expect(badWeights.status).toBe(400);
     expect(badWeights.body.fields['params.weights']).toMatch(/sum to 1\.0/);
-    expect(
-      (await c.post('/api/config/scoring', { version: 'nexivo-1.1', params: { ...params, typo: 1 } })).status,
-    ).toBe(400);
+    expect((await c.post('/api/config/scoring', { version: 'test-2.0', params: { ...params, typo: 1 } })).status).toBe(
+      400,
+    );
   });
 
   it('409 for an existing version', async () => {
@@ -116,12 +116,12 @@ describe('POST /api/config/scoring', () => {
   it('activates the new version; later scores record it', async () => {
     const params = await current();
     const res = await c.post('/api/config/scoring', {
-      version: 'nexivo-1.1',
+      version: 'test-2.0',
       params: { ...params, weights: { ...params.weights, pain: 0.35, milestones: 0 } },
     });
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ version: 'nexivo-1.1', active: true });
-    expect((await c.get('/api/config/scoring')).body.version).toBe('nexivo-1.1');
+    expect(res.body).toMatchObject({ version: 'test-2.0', active: true });
+    expect((await c.get('/api/config/scoring')).body.version).toBe('test-2.0');
     expect((await checkIn(asha, 1)).score.config_id).toBe(res.body.id);
     const { rows } = await query('SELECT count(*)::int AS n FROM scoring_configs WHERE active');
     expect(rows[0].n).toBe(1);
@@ -133,18 +133,18 @@ describe('recomputeAllScores (npm run db:recompute)', () => {
     for (const h of [72, 48, 24]) await checkIn(asha, h, { pain: 5 });
     const params = await current();
     await c.post('/api/config/scoring', {
-      version: 'nexivo-1.1',
+      version: 'test-2.0',
       params: { ...params, weights: { ...params.weights, pain: 0.35, milestones: 0 } },
     });
 
-    expect(await recomputeAllScores()).toEqual({ configVersion: 'nexivo-1.1', patients: 2, inserted: 3, skipped: 0 });
+    expect(await recomputeAllScores()).toEqual({ configVersion: 'test-2.0', patients: 2, inserted: 3, skipped: 0 });
     const { rows } = await query(
       `SELECT c.version, count(*)::int AS n FROM recovery_scores s JOIN scoring_configs c ON c.id = s.config_id
         GROUP BY c.version ORDER BY c.version`,
     );
     expect(rows).toEqual([
-      { version: 'nexivo-1.0', n: 3 },
       { version: 'nexivo-1.1', n: 3 },
+      { version: 'test-2.0', n: 3 },
     ]);
     expect(await recomputeAllScores()).toMatchObject({ inserted: 0, skipped: 3 });
   });
@@ -152,4 +152,43 @@ describe('recomputeAllScores (npm run db:recompute)', () => {
   async function current() {
     return (await c.get('/api/config/scoring')).body.params;
   }
+});
+
+describe('explanations (M4) through the API', () => {
+  it('each check-in returns its factors, explanation and recommendation; Σ contributions = C − B', async () => {
+    for (const h of [96, 72, 48]) await checkIn(asha, h, { pain: 2 });
+    const { score } = await checkIn(asha, 24, { pain: 7 });
+    expect(score.contributions).toHaveLength(6);
+    expect(score.contributions[0]).toMatchObject({ parameter: 'pain', raw_value: 7 });
+    expect(
+      Math.abs(score.contributions.reduce((t, f) => t + f.contribution, 0) - (score.composite - score.baseline)),
+    ).toBeLessThan(0.01);
+    expect(score.explanation).toMatch(
+      /^Pain rose to 7\/10 \(usual for this patient: 2\/10\), lowering the score by 12\.5 points\./,
+    );
+    expect(score.category).toBe('attention');
+    expect(score.recommendation).toBe('Recommend prompt professional follow-up. Main driver: Pain.');
+  });
+
+  it('GET /api/patients/:id/scores/latest: the latest check-in in time, corrections included', async () => {
+    expect((await c.get(`/api/patients/${asha.id}/scores/latest`)).status).toBe(404);
+    const day9 = await checkIn(asha, 24, { pain: 2 });
+    await checkIn(asha, 72, { pain: 5 }); // back-dated: saved later, but not the latest check-in
+
+    let latest = (await c.get(`/api/patients/${asha.id}/scores/latest`)).body;
+    expect(latest).toMatchObject({
+      observation_id: day9.observation.id,
+      day_post_op: 9,
+      config_version: 'nexivo-1.1',
+      explanation: expect.any(String),
+      recommendation: expect.any(String),
+    });
+
+    const corrected = (await c.post(`/api/observations/${day9.observation.id}/corrections`, { pain: 3 })).body;
+    latest = (await c.get(`/api/patients/${asha.id}/scores/latest`)).body;
+    expect(latest.observation_id).toBe(corrected.observation.id);
+
+    const patient = await apiClient(app, 'ravi@example.test');
+    expect((await patient.get(`/api/patients/${asha.id}/scores/latest`)).status).toBe(403);
+  });
 });

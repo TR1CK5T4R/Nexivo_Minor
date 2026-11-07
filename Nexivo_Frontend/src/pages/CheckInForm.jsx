@@ -4,7 +4,7 @@ import { ArrowLeft, ClipboardCheck } from 'lucide-react';
 import { Button, Card, DecisionSupportNotice } from '../components';
 import { useAuth } from '../context/AuthContext';
 import { recoveryAPI } from '../services/djangoApi';
-import { CATEGORIES } from '../utils/recovery';
+import { ALERT_SEVERITIES, CATEGORIES } from '../utils/recovery';
 
 // Nexivo daily check-in (spec M5). The symptom list comes from the active scoring config.
 const SCALES = [
@@ -107,8 +107,22 @@ function CheckIn({ patientId, symptomNames }) {
                     <span className={`inline-block mt-2 px-3 py-1 rounded-full border text-sm font-semibold ${CATEGORIES[result.score.category].className}`}>
                         {CATEGORIES[result.score.category].label}
                     </span>
+                    <p className="mt-4 text-slate-700">{result.score.explanation}</p>
+                    <p className="mt-2 font-medium text-slate-900">{result.score.recommendation}</p>
                     {result.score.limited_history && (
                         <p className="mt-3 text-sm text-slate-500">Based on limited history: your personal baseline builds up over your first few check-ins.</p>
+                    )}
+                    {result.alerts.length > 0 && (
+                        <div className="mt-6">
+                            <h3 className="font-semibold text-slate-900 mb-2">Flagged for your care team</h3>
+                            <ul className="space-y-2">
+                                {result.alerts.map((alert) => (
+                                    <li key={alert.id} className={`p-3 border rounded-lg text-sm ${ALERT_SEVERITIES[alert.severity].className}`}>
+                                        <span className="font-semibold">{ALERT_SEVERITIES[alert.severity].label}:</span> {alert.message}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
                     )}
                 </div>
                 <Button className="mt-6" onClick={() => { setForm(blank()); setResult(null); }}>New check-in</Button>

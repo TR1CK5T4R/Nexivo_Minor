@@ -12,7 +12,7 @@ import {
 } from '../repositories/recovery.repository.js';
 import { AppError } from '../utils/httpErrors.js';
 import { assertOwner, assertPatient, notFound } from './recovery.service.js';
-import { scoreNewObservation } from './score.service.js';
+import { assessNewObservation } from './score.service.js';
 
 const UNIQUE_VIOLATION = '23505';
 const DAY_MS = 86_400_000;
@@ -70,7 +70,7 @@ async function requireProfile(patientId, client) {
  * @param {number} patientId
  * @param {object} body validated observationBody
  * @param {{ patientId: number | null }} actor
- * @returns {Promise<{ observation: object, score: object, alerts: object[] }>} alerts come with Phase 4
+ * @returns {Promise<{ observation: object, score: object, alerts: object[] }>} alerts raised or updated by it
  */
 export async function createObservation(patientId, body, actor) {
   return withTransaction(async (client) => {
@@ -78,8 +78,7 @@ export async function createObservation(patientId, body, actor) {
     const config = await findActiveConfig(client);
     const values = { ...body, observed_at: body.observed_at ?? new Date().toISOString(), newSymptoms: body.symptoms };
     const observation = await insertObservation(buildRow(values, config, profile, { patientId, actor }), client);
-    const score = await scoreNewObservation(observation, profile, config, client);
-    return { observation, score, alerts: [] };
+    return { observation, ...(await assessNewObservation(observation, profile, config, client)) };
   });
 }
 
@@ -114,8 +113,7 @@ export async function correctObservation(observationId, body, actor) {
     const row = buildRow(values, config, profile, { patientId, actor, correctsObservationId: original.id });
     try {
       const observation = await insertObservation(row, client);
-      const score = await scoreNewObservation(observation, profile, config, client);
-      return { observation, score, alerts: [] };
+      return { observation, ...(await assessNewObservation(observation, profile, config, client)) };
     } catch (err) {
       // Another correction of the same version won the race.
       if (err.code === UNIQUE_VIOLATION && err.constraint === 'recovery_observations_corrects_key')

@@ -38,10 +38,10 @@ describe('dayPostOp', () => {
 });
 
 describe('GET /api/config/scoring', () => {
-  it('returns the seeded spec defaults (nexivo-1.0), weights summing to 1', async () => {
+  it('returns the seeded spec defaults (nexivo-1.1: 1.0 plus templates), weights summing to 1', async () => {
     const res = await (await client()).get('/api/config/scoring');
     expect(res.status).toBe(200);
-    expect(res.body.version).toBe('nexivo-1.0');
+    expect(res.body.version).toBe('nexivo-1.1');
     const sum = Object.values(res.body.params.weights).reduce((a, b) => a + b, 0);
     expect(sum).toBeCloseTo(1, 10);
     expect(res.body.params.symptoms).toEqual(['fever', 'wound_redness', 'swelling', 'nausea', 'breathlessness']);
@@ -102,7 +102,8 @@ describe('POST /api/patients/:id/observations', () => {
     // + 0.10×0 (the day-7 milestone is due, not done) = 66.5; no earlier check-ins → limited-history bands.
     expect(res.body.score).toMatchObject({ category: 'normal', limited_history: true, baseline: null });
     expect(res.body.score.composite).toBeCloseTo(66.5, 9);
-    expect(res.body.alerts).toEqual([]);
+    // Day 10: the day-7 template milestone is 3 days overdue (a low alert; it doesn't change the category).
+    expect(res.body.alerts).toMatchObject([{ type: 'MILESTONE_OVERDUE', severity: 'low', status: 'open' }]);
     expect(res.body.observation).toMatchObject({
       patient_id: asha.id,
       day_post_op: 10,

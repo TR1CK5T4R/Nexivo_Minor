@@ -2,12 +2,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { scoringParamsSchema } from '../../src/config/scoringConfig.js';
+import { seedParams } from '../helpers/scoringParams.js';
+import { assess } from '../../src/engine/index.js';
 import { normalize } from '../../src/engine/normalize.js';
 import { categorize, composite, expectedScore, scoreObservation, slope } from '../../src/engine/score.js';
 
-// The seeded defaults, read from the migration so the tests check the real seed.
-const seedSql = readFileSync(new URL('../../db/migrations/0011_scoring_configs.sql', import.meta.url), 'utf8');
-const params = JSON.parse(/'nexivo-1\.0', true, '(\{[\s\S]*\})'\);/.exec(seedSql)[1]);
+const params = seedParams;
 
 // An observation where every parameter is at its best (composite 100).
 const best = (o = {}) => ({
@@ -228,14 +228,14 @@ describe('scoreObservation', () => {
   const ctx = { expectedRecoveryDays: 42 };
 
   it('limited-history mode with fewer than min_history (3) earlier observations', () => {
-    const r = scoreObservation([withComposite(70, 1), withComposite(80, 2)], withComposite(50, 3), painOnly, ctx);
+    const r = assess([withComposite(70, 1), withComposite(80, 2)], withComposite(50, 3), painOnly, ctx);
     expect(r.limited_history).toBe(true);
-    expect(r.category).toBe('slower'); // 50 is in the 40-60 band; the 25-point drop is not used yet
+    expect(r.category).toBe('slower'); // 50 is in the 40-60 band; the drop and the pain alert are not used yet
     expect(r.baseline).toBeCloseTo(75, 10);
   });
 
   it('no baseline without history', () => {
-    const r = scoreObservation([], withComposite(90, 0), painOnly, ctx);
+    const r = assess([], withComposite(90, 0), painOnly, ctx);
     expect(r).toMatchObject({ baseline: null, slope: null, limited_history: true, category: 'normal' });
   });
 
@@ -254,7 +254,7 @@ describe('scoreObservation', () => {
 
   it('a steady drop from a good baseline requires attention once history is long enough', () => {
     const history = [80, 82, 84].map((c, i) => withComposite(c, i + 10));
-    const r = scoreObservation(history, withComposite(60, 13), painOnly, ctx);
+    const r = assess(history, withComposite(60, 13), painOnly, ctx);
     expect(r.limited_history).toBe(false);
     expect(r.category).toBe('attention'); // baseline 82 − 60 = 22 ≥ 15
   });

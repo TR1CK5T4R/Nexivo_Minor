@@ -72,34 +72,36 @@ export function categorize(s, params) {
  * @param {object[]} history the patient's earlier observations, oldest first (only those before `current`)
  * @param {object} current the observation to score (same shape as normalize's input, plus day_post_op)
  * @param {object} params the scoring config
- * @param {{ expectedRecoveryDays: number, alertSeverities?: string[] }} context
- * @returns {{ normalized: object, composite: number, baseline: number | null, slope: number | null,
- *   expected: number, category: string, limited_history: boolean }}
+ * @param {{ expectedRecoveryDays: number }} context
+ * @returns {{ normalized: object, parameter_baselines: object | null, composite: number, baseline: number | null,
+ *   slope: number | null, expected: number, limited_history: boolean }} the category is picked in
+ *   engine/index.js, with the alerts
  */
-export function scoreObservation(history, current, params, { expectedRecoveryDays, alertSeverities = [] }) {
+export function scoreObservation(history, current, params, { expectedRecoveryDays }) {
   const k = params.window_k;
   const scoreOf = (o) => composite(normalize(o, params), params.weights);
   const normalized = normalize(current, params);
   const c = composite(normalized, params.weights);
-  const prior = history.slice(-k).map(scoreOf);
+  const window = history.slice(-k).map((o) => normalize(o, params));
+  const prior = window.map((n) => composite(n, params.weights));
   const baseline = prior.length > 0 ? mean(prior) : null;
+  // bᵢ: each parameter's mean over the same window as B (used by the M4 contributions).
+  const parameterBaselines =
+    window.length > 0
+      ? Object.fromEntries(Object.keys(normalized).map((p) => [p, mean(window.map((n) => n[p]))]))
+      : null;
   // The last k observations including the current one (k = 1 has no trend; slice(-0) would take everything).
   const earlier = k > 1 ? history.slice(-(k - 1)) : [];
   const s = slope([...earlier.map((o) => ({ x: o.day_post_op, y: scoreOf(o) })), { x: current.day_post_op, y: c }]);
   const expected = expectedScore(current.day_post_op, params, expectedRecoveryDays);
   const limitedHistory = history.length < params.min_history;
-  const category = categorize(
-    {
-      composite: c,
-      baseline,
-      slope: s,
-      expected,
-      day: current.day_post_op,
-      expectedRecoveryDays,
-      limitedHistory,
-      alertSeverities,
-    },
-    params,
-  );
-  return { normalized, composite: c, baseline, slope: s, expected, category, limited_history: limitedHistory };
+  return {
+    normalized,
+    parameter_baselines: parameterBaselines,
+    composite: c,
+    baseline,
+    slope: s,
+    expected,
+    limited_history: limitedHistory,
+  };
 }

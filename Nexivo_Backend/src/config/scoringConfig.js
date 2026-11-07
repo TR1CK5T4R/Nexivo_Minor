@@ -13,6 +13,7 @@ const score100 = z.number().finite().min(0).max(100);
 const fraction = z.number().finite().min(0).max(1);
 const scale10 = z.number().int().min(0).max(10);
 const count = (min, max) => z.number().int().min(min).max(max);
+const text = z.string().trim().min(1).max(300);
 
 const paramsSchema = z
   .strictObject({
@@ -43,6 +44,24 @@ const paramsSchema = z
       mobility_lte: scale10,
       adherence_lt: fraction,
       any_symptom_severity_gte: count(0, 3),
+    }),
+    explanation_templates: z.strictObject({
+      below_baseline: text,
+      above_baseline: text,
+      below_ideal: text,
+      steady: text,
+      at_best: text,
+      parameters: z.strictObject(
+        Object.fromEntries(PARAMETERS.map((p) => [p, z.strictObject({ label: text, worse: text, better: text })])),
+      ),
+    }),
+    recommendation_templates: z.strictObject({
+      attention: text,
+      slower: text,
+      normal: text,
+      areas: z.strictObject(Object.fromEntries(PARAMETERS.map((p) => [p, text]))),
+      fallback_factor: text,
+      fallback_area: text,
     }),
     milestone_templates: z
       .record(

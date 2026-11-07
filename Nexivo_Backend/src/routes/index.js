@@ -9,6 +9,8 @@ import { validate } from '../middleware/validate.js';
 import { exerciseSessionSchema } from '../validators/exercise.validators.js';
 import { configBody } from '../config/scoringConfig.js';
 import {
+  alertPatch,
+  alertsQuery,
   correctionBody,
   idParams,
   milestoneBody,
@@ -183,6 +185,24 @@ function nexivoRoutes({ recovery, csrfProtect }) {
       path: '/api/patients/:id/milestones',
       handlers: [csrfProtect, json, check({ params, body: milestoneBody }), ownPatientOnly, recovery.addMilestone],
       note: 'M1',
+    },
+    {
+      method: 'get',
+      path: '/api/patients/:id/scores/latest',
+      handlers: [check({ params }), ownPatientOnly, recovery.latestScore],
+      note: 'M4/M5',
+    },
+    {
+      method: 'get',
+      path: '/api/patients/:id/alerts',
+      handlers: [check({ params, query: alertsQuery }), ownPatientOnly, recovery.listAlerts],
+      note: 'M3',
+    },
+    {
+      method: 'patch',
+      path: '/api/alerts/:id',
+      handlers: [csrfProtect, json, check({ params, body: alertPatch }), recovery.patchAlert],
+      note: 'M3 (owner checked in the service)',
     },
     {
       method: 'patch',
