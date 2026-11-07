@@ -1,0 +1,36 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Node
+node_modules/
+dist/
+coverage/
+
+# OS / editor
+.DS_Store
+
+# Old Django backend (kept locally as the parity reference only)
+legacy_django_backend/
+
+# Local parity and benchmark scratch data
+.parity-work/
+Nexivo_Backend/bench/raw/
+
+# Generated reports and extra notes (only the main READMEs are committed)
+Nexivo_Backend/tests/parity/report.md
+Nexivo_Backend/tests/parity/fixtures/README.md
+Nexivo_Backend/bench/REPORT.md
+DEBUG_LOGIN.md
+DJANGO_CHANGES_REQUIRED.md
+plan.readme.md
+
+
+# Personal interview notes
+study-guide/
