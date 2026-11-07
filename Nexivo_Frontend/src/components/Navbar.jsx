@@ -41,7 +41,7 @@ export const Navbar = ({
                                 />
                             </div>
                             <span className={`text-2xl font-bold ${styles.text} tracking-tight`}>
-                                ReViveCare
+                                Nexivo
                             </span>
                         </a>
                     </div>

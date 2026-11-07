@@ -52,12 +52,12 @@ export default function ReviveCare() {
                             <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
                                 <Heart className="w-8 h-8 text-white" fill="white" />
                             </div>
-                            <span className="text-2xl font-bold text-slate-800 tracking-tight">ReViveCare</span>
+                            <span className="text-2xl font-bold text-slate-800 tracking-tight">Nexivo</span>
                         </a>
 
                         {/* Heading */}
                         <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight tracking-tight">
-                            Welcome to <span className="bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">ReViveCare</span>
+                            Welcome to <span className="bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">Nexivo</span>
                         </h1>
 
                         {/* Subheading */}
@@ -116,13 +116,13 @@ export default function ReviveCare() {
                 </div>
             </section>
 
-            {/* Why ReViveCare Section */}
+            {/* Why Nexivo Section */}
             <section className="py-20 lg:py-32 bg-white">
                 <div className="max-w-7xl mx-auto px-6">
                     {/* Section Header */}
                     <div className="text-center mb-16 lg:mb-20">
                         <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-5">
-                            Why ReViveCare?
+                            Why Nexivo?
                         </h2>
                         <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
                             Our platform bridges the gap between hospital discharge and complete recovery, ensuring patients receive continuous, quality care at home.
@@ -149,7 +149,7 @@ export default function ReviveCare() {
                                     Transform Your Recovery Process
                                 </h3>
                                 <p className="text-lg text-slate-600 mb-8 leading-relaxed">
-                                    ReViveCare empowers healthcare providers and patients with the tools needed for successful post-discharge outcomes.
+                                    Nexivo empowers healthcare providers and patients with the tools needed for successful post-discharge outcomes.
                                 </p>
                                 <div className="grid grid-cols-1 gap-4">
                                     {benefits.map((benefit, index) => (

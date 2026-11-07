@@ -36,7 +36,7 @@ try {
 
 const app = createApp({ config, logger });
 const server = app.listen(config.port, () => {
-  logger.info({ port: config.port, env: config.env }, 'ReviveCare API listening');
+  logger.info({ port: config.port, env: config.env }, 'Nexivo API listening');
 });
 server.on('error', (err) => {
   logger.fatal({ err }, 'server failed to start');

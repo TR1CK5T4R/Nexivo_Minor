@@ -1,13 +1,13 @@
-# ReViveCare — Frontend
+# Nexivo — Frontend
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-pose_tracking-0097A7)
 
-The React app of **ReViveCare**, a post-surgery rehabilitation assistant I built as a personal project. Doctors add patients with their medical notes. Patients log in, chat with an AI assistant that knows those notes (English or Hindi), and do exercises tracked by their webcam with a live rep counter. The API is the Node.js backend in [`../Nexivo_Backend`](../Nexivo_Backend).
+The React app of **Nexivo**, a post-surgery rehabilitation assistant I built as a personal project. Doctors add patients with their medical notes. Patients log in, chat with an AI assistant that knows those notes (English or Hindi), and do exercises tracked by their webcam with a live rep counter. The API is the Node.js backend in [`../Nexivo_Backend`](../Nexivo_Backend).
 
-> **About this project.** ReViveCare is a student project, built and maintained by me, [Tushar Singla](#author), a final-year B.Tech IT student. It isn't a commercial product, and it isn't meant for real patients or real medical data.
+> **About this project.** Nexivo is a student project, built and maintained by me, [Tushar Singla](#author), a final-year B.Tech IT student. It isn't a commercial product, and it isn't meant for real patients or real medical data.
 
 ## Features
 

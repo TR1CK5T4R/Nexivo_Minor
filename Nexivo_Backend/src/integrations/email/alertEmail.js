@@ -29,7 +29,7 @@ export function buildAlertEmail({ patient, userQuery, patientResponse, score, no
   return {
     subject: `🚨 URGENT - Patient Alert: ${patient.name} (Score: ${score2f})`,
     body: `
-URGENT PATIENT ALERT - ReViveCare System
+URGENT PATIENT ALERT - Nexivo System
 ============================================
 
 Alert Time: ${formatLocalTimestamp(now)}
@@ -49,7 +49,7 @@ ${patient.info}
 RECOMMENDATION:
 Please contact the patient immediately to assess their condition and provide appropriate medical guidance.
 
-This is an automated alert from the ReViveCare post-discharge monitoring system.
+This is an automated alert from the Nexivo post-discharge monitoring system.
 `,
   };
 }

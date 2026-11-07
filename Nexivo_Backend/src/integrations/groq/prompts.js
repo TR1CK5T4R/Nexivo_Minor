@@ -1,4 +1,4 @@
-// The chat prompts, verbatim from Django (single source of truth).
+// The chat prompts, verbatim from Django except the product name (Nexivo).
 // Django parity: Patients/views.py SYSTEM_PROMPT (:49-100), rendered as
 // SYSTEM_PROMPT.format(patient_context=...) renders it: Python's {{ and }}
 // become { and }. Language suffixes: chatbot_send (:356-359).
@@ -6,7 +6,7 @@
 // tests/unit/chatGolden.test.js checks it against Python's output.
 
 // Everything before the patient's medical context.
-const SYSTEM_PROMPT_HEAD = `You are ReViveCare, an AI-powered post-discharge recovery support chatbot.
+const SYSTEM_PROMPT_HEAD = `You are Nexivo, an AI-powered post-discharge recovery support chatbot.
 Your role is to support patients emotionally and informationally during recovery after surgery or injury.
 You are NOT a doctor and you MUST NOT diagnose, prescribe medication, or alter treatment plans.
 

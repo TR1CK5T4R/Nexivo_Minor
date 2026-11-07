@@ -1,7 +1,7 @@
 {
   "name": "nexivo-node-backend",
   "version": "1.0.0",
-  "description": "ReViveCare Node.js + Express + PostgreSQL backend",
+  "description": "Nexivo Node.js + Express + PostgreSQL backend",
   "main": "src/server.js",
   "type": "module",
   "engines": {

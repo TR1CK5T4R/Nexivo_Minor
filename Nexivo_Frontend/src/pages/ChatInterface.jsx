@@ -154,7 +154,7 @@ function ChatInterface() {
     const [messages, setMessages] = useState([
         {
             id: 1,
-            text: "Hello! I'm your ReviveCare medical assistant. I'm here to help with your post-surgery recovery. How are you feeling today?",
+            text: "Hello! I'm your Nexivo medical assistant. I'm here to help with your post-surgery recovery. How are you feeling today?",
             isAI: true,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
@@ -179,8 +179,8 @@ function ChatInterface() {
     // Update welcome message when language changes
     useEffect(() => {
         const welcomeMessage = language === 'hindi'
-            ? "नमस्ते! मैं आपका ReviveCare मेडिकल सहायक हूं। मैं आपके सर्जरी के बाद की रिकवरी में मदद करने के लिए यहां हूं। आप आज कैसा महसूस कर रहे हैं?"
-            : "Hello! I'm your ReviveCare medical assistant. I'm here to help with your post-surgery recovery. How are you feeling today?";
+            ? "नमस्ते! मैं आपका Nexivo मेडिकल सहायक हूं। मैं आपके सर्जरी के बाद की रिकवरी में मदद करने के लिए यहां हूं। आप आज कैसा महसूस कर रहे हैं?"
+            : "Hello! I'm your Nexivo medical assistant. I'm here to help with your post-surgery recovery. How are you feeling today?";
 
         if (messages.length === 1 && messages[0].id === 1) {
             setMessages([{

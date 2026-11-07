@@ -1,13 +1,13 @@
-# ReViveCare — Backend
+# Nexivo — Backend
 
 ![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-4169E1?logo=postgresql&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-916%20passing-brightgreen)
 
-The REST API behind **ReViveCare**, a post-surgery rehabilitation assistant I built as a personal project. Patients chat with an AI assistant that knows their doctor's notes (in English or Hindi) and do camera-tracked exercises; the doctor is alerted automatically when a patient's message sounds serious.
+The REST API behind **Nexivo**, a post-surgery rehabilitation assistant I built as a personal project. Patients chat with an AI assistant that knows their doctor's notes (in English or Hindi) and do camera-tracked exercises; the doctor is alerted automatically when a patient's message sounds serious.
 
-> **About this project.** ReViveCare is a student project, built and maintained by me, [Tushar Singla](#author), a final-year B.Tech IT student. It isn't a commercial product, and it isn't meant for real patients or real medical data.
+> **About this project.** Nexivo is a student project, built and maintained by me, [Tushar Singla](#author), a final-year B.Tech IT student. It isn't a commercial product, and it isn't meant for real patients or real medical data.
 
 ## Highlights
 

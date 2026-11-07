@@ -1,14 +1,16 @@
-# ReViveCare
+# Nexivo
 
 A post-surgery rehabilitation assistant, built as a personal project by [Tushar Singla](#author), a final-year B.Tech IT student.
 
-After an operation, patients go home with questions and exercises but no one to ask. ReViveCare gives them:
+After an operation, patients go home with questions and exercises but no one to ask. Nexivo gives them:
 
 - **An AI recovery assistant** that answers in English or Hindi using the notes their doctor added, and alerts the doctor by email (and optionally a phone call) when a message sounds serious.
 - **Camera-tracked exercises:** the browser follows the patient's arms with MediaPipe, counts reps, grades their form and saves each set.
 - **Simple doctor tools** to add patients and their medical notes.
 
-> ReViveCare is a student project, not a commercial or medical product. Please use only made-up data.
+> Nexivo is a student project, not a commercial or medical product. Please use only made-up data.
+
+Nexivo is the next version of my earlier project, ReViveCare. Database names and demo emails still use `revivecare`; renaming them would break existing setups and logins.
 
 ## Try it
 

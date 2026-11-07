@@ -16,7 +16,7 @@ import ExerciseWorkout from './pages/ExerciseWorkout';
 
 /**
  * Main App Component
- * Handles routing for the ReviveCare application
+ * Handles routing for the Nexivo application
  */
 function App() {
   return (
