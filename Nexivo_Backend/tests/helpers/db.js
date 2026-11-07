@@ -7,6 +7,9 @@ export async function truncateAll() {
   await query(
     'TRUNCATE users, doctors, patients, exercise_sessions, chat_messages, patient_reports, sessions RESTART IDENTITY CASCADE',
   );
+  // Back to the seeded scoring config only (its scores were truncated with the patients above).
+  await query("DELETE FROM scoring_configs WHERE version <> 'nexivo-1.0'");
+  await query("UPDATE scoring_configs SET active = true WHERE version = 'nexivo-1.0'");
 }
 
 let counter = 0;

@@ -10,3 +10,4 @@ export { FormInput } from './FormInput';
 export { FormTextarea } from './FormTextarea';
 export { FormHeader } from './FormHeader';
 export { InfoCard } from './InfoCard';
+export { DecisionSupportNotice } from './DecisionSupportNotice';

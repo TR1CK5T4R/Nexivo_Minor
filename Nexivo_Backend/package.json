@@ -31,7 +31,8 @@
     "parity": "bash ../parity-tools/reset.sh && node scripts/parity/run.js",
     "groq:smoke": "GROQ_LIVE=1 node scripts/groq-live.js smoke",
     "groq:capture": "GROQ_LIVE=1 node scripts/groq-live.js capture",
-    "db:demo": "node scripts/demo-accounts.js"
+    "db:demo": "node scripts/demo-accounts.js",
+    "db:recompute": "node scripts/recompute-scores.js"
   },
   "dependencies": {
     "connect-pg-simple": "10.0.0",

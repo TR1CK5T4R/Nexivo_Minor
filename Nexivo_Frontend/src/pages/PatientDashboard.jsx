@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Heart, Dumbbell, MessageSquare, Calendar, TrendingUp, Clock, CheckCircle2, Target, Activity } from 'lucide-react';
+import { Heart, Dumbbell, MessageSquare, Calendar, TrendingUp, Clock, CheckCircle2, Target, Activity, ClipboardCheck } from 'lucide-react';
 import { Card, InfoCard, WelcomeSection } from '../components';
 import { usePatientData } from '../hooks/usePatientData';
 
@@ -177,6 +177,14 @@ export default function PatientDashboard() {
                                 >
                                     <MessageSquare className="w-6 h-6 mb-2" />
                                     <div className="text-sm font-semibold">Chat with AI</div>
+                                </button>
+
+                                <button
+                                    onClick={() => navigate('/patient/check-in')}
+                                    className="col-span-2 p-4 bg-gradient-to-br from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl transition-all hover:scale-105 shadow-lg flex flex-col items-center justify-center"
+                                >
+                                    <ClipboardCheck className="w-6 h-6 mb-2" />
+                                    <div className="text-sm font-semibold">Daily Check-in</div>
                                 </button>
                             </div>
                         </Card>

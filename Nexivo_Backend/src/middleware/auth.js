@@ -5,6 +5,7 @@
 // Django has no doctor login and no role checks.
 
 import { clearDeadSessionCookie } from './session.js';
+import { sendJson } from '../utils/djangoResponses.js';
 
 /**
  * The logged-in patient's id, or null. Mirrors Python truthiness of
@@ -16,6 +17,23 @@ import { clearDeadSessionCookie } from './session.js';
 export function sessionPatientId(req) {
   const id = req.session?.patient_id;
   return id ? id : null;
+}
+
+/**
+ * Nexivo /api/patients/:id/... routes: a logged-in patient may only reach their
+ * own id (403 otherwise). A request without a patient session is a clinician
+ * request; clinicians have no login yet, so it passes, like POST /doctor_info.
+ * Runs after validate(), which parsed :id into req.validated.params.id.
+ *
+ * @type {import('express').RequestHandler}
+ */
+export function ownPatientOnly(req, res, next) {
+  res.vary('Cookie');
+  const own = sessionPatientId(req);
+  if (own !== null && own !== req.validated.params.id) {
+    return sendJson(res, 403, { error: 'Forbidden' });
+  }
+  next();
 }
 
 /**

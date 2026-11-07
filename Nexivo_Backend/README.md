@@ -157,6 +157,7 @@ npm run lint && npm run format:check
 | `npm run lint`, `format`, `format:check`      | ESLint and Prettier                                                            |
 | `npm run db:migrate`, `db:status`, `db:reset` | Apply migrations, show their status, reset (local databases only)              |
 | `npm run db:demo`                             | Create or reset the demo accounts                                              |
+| `npm run db:recompute`                        | Score every check-in with the active scoring config (old scores are kept)      |
 | `npm run db:seed`                             | Generate test data (local databases only)                                      |
 | `npm run db:etl -- <sqlite copy>`             | Import the data from the original Django database                              |
 | `npm run bench`                               | Benchmark the main queries with and without the index migration                |
@@ -177,6 +178,19 @@ npm run lint && npm run format:check
 | `GET /static/Patients/videos/*` | anyone  | Exercise demo videos                                                                   |
 | `GET /api/health`               | anyone  | Health check (database included)                                                       |
 
+Nexivo recovery API (JSON, no trailing slash). "Patient or clinician": a logged-in patient reaches only their own `:id` (403 otherwise); a request without a patient session counts as a clinician. Unsafe methods need the CSRF header. Errors: `400 {"error": "Invalid request", "fields": {...}}`, or `403/404/409 {"error": "..."}`.
+
+| Method and path                              | Who                  | What                                                                                                     |
+| -------------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------- |
+| `GET /api/config/scoring`                    | anyone               | Active scoring config `{id, version, params}`                                                            |
+| `POST /api/config/scoring`                   | anyone (admin later) | New config `{version, params}`: validated (weights sum to 1), activated. Then run `npm run db:recompute` |
+| `GET/PUT /api/patients/:id/recovery-profile` | patient or clinician | Surgery details. First PUT also creates the milestone plan from config templates                         |
+| `GET /api/patients/:id/observations`         | patient or clinician | Check-ins, latest versions only, oldest first. Optional `?from=&to=` (ISO times)                         |
+| `POST /api/patients/:id/observations`        | patient or clinician | New check-in → `{observation, score, alerts}`; scored in the same transaction                            |
+| `POST /api/observations/:id/corrections`     | patient or clinician | Correct a check-in: inserts a new version (any subset of fields)                                         |
+| `GET/POST /api/patients/:id/milestones`      | patient or clinician | List or add milestones                                                                                   |
+| `PATCH /api/milestones/:id`                  | patient or clinician | `{completed: true/false}`                                                                                |
+
 ## Performance
 
 Every query on the request path is an index lookup costing 4–15 µs of database time with 1,200 patients and 20,000 sessions. A targeted index cut the cleanup of expired sessions from 1.19 ms to 0.17 ms (−86%). Measured with `npm run bench`: PostgreSQL's own execution time (`EXPLAIN ANALYZE`), 20 runs per query after 5 warm-ups, before and after the index migration, on generated data. Raw results are in `bench/`.
@@ -191,7 +205,7 @@ Every query on the request path is an index lookup costing 4–15 µs of databas
 
 The app runs locally today. These are the notes I wrote for putting it online.
 
-**Recommended setup: one domain.** Serve the built frontend and the API from the same domain behind a reverse proxy (nginx, Caddy or the hosting platform's routing) that sends the API paths (`/csrf/`, `/login/`, `/patient/…`, `/doctor_info`, `/exercise/sessions/`, `/static/`, `/api/health`) to Node and everything else to the frontend build. This keeps the session and CSRF cookies simple: both are `SameSite=Lax`, and the frontend reads the CSRF cookie from JavaScript, which only works on the same domain.
+**Recommended setup: one domain.** Serve the built frontend and the API from the same domain behind a reverse proxy (nginx, Caddy or the hosting platform's routing) that sends the API paths (`/csrf/`, `/login/`, `/patient/…`, `/doctor_info`, `/exercise/sessions/`, `/static/`, `/api/`) to Node and everything else to the frontend build. This keeps the session and CSRF cookies simple: both are `SameSite=Lax`, and the frontend reads the CSRF cookie from JavaScript, which only works on the same domain.
 
 Production settings:
 
@@ -209,6 +223,7 @@ These are deliberate scope limits of a student project, carried over from the or
 
 - Patient login checks only the email address; there are no real passwords yet.
 - The doctor pages have no login, so anyone can add or edit a patient.
+- Nexivo clinician requests have no login either: without a patient session, the recovery API answers as a clinician for any patient.
 - The login and chat rate limits are kept in memory, which suits a single server process.
 
 ## Author

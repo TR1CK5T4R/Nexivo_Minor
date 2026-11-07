@@ -13,6 +13,7 @@ import AddPatientFormStandalone from './pages/AddPatientFormStandalone';
 import ChatInterface from './pages/ChatInterface';
 import ExerciseSelection from './pages/ExerciseSelection';
 import ExerciseWorkout from './pages/ExerciseWorkout';
+import CheckInForm from './pages/CheckInForm';
 
 /**
  * Main App Component
@@ -39,6 +40,9 @@ function App() {
           {/* Exercise Routes */}
           <Route path="/patient/exercises" element={<ExerciseSelection />} />
           <Route path="/patient/exercise/:exerciseId" element={<ExerciseWorkout />} />
+
+          {/* Nexivo daily check-in */}
+          <Route path="/patient/check-in" element={<CheckInForm />} />
 
           {/* Chat Interface Route - Patient AI Assistant */}
           <Route path="/patient/chat" element={<ChatInterface />} />

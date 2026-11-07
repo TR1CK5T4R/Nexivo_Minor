@@ -51,7 +51,11 @@ const apiCall = async (endpoint, method = 'GET', data = null) => {
         const responseData = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-            throw new Error(responseData.message || `API Error: ${response.statusText}`);
+            // Nexivo endpoints answer {error, fields}; older ones may send {message}.
+            const error = new Error(responseData.message || responseData.error || `API Error: ${response.statusText}`);
+            error.status = response.status;
+            error.fields = responseData.fields;
+            throw error;
         }
 
         return responseData;
@@ -183,6 +187,22 @@ export const exerciseAPI = {
     },
 };
 
+// ==================== Nexivo Recovery API ====================
+
+// Clinician pages have no login, so the CSRF cookie may not exist yet.
+const unsafeCall = async (endpoint, method, data) => {
+    if (!getCSRFToken()) await fetchCSRFToken();
+    return apiCall(endpoint, method, data);
+};
+
+export const recoveryAPI = {
+    getConfig: () => apiCall('/api/config/scoring'),
+    getProfile: (patientId) => apiCall(`/api/patients/${patientId}/recovery-profile`),
+    saveProfile: (patientId, profile) => unsafeCall(`/api/patients/${patientId}/recovery-profile`, 'PUT', profile),
+    // Returns {observation, score, alerts}.
+    createObservation: (patientId, checkIn) => unsafeCall(`/api/patients/${patientId}/observations`, 'POST', checkIn),
+};
+
 // ==================== Combined Export ====================
 
 const djangoAPI = {
@@ -190,6 +210,7 @@ const djangoAPI = {
     doctor: doctorAPI,
     chatbot: chatbotAPI,
     exercise: exerciseAPI,
+    recovery: recoveryAPI,
 };
 
 export default djangoAPI;

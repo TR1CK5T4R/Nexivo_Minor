@@ -4,9 +4,19 @@
 // middleware/notFound.js, so nothing has to be listed twice.
 
 import express from 'express';
-import { requirePatient } from '../middleware/auth.js';
+import { ownPatientOnly, requirePatient } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { exerciseSessionSchema } from '../validators/exercise.validators.js';
+import { configBody } from '../config/scoringConfig.js';
+import {
+  correctionBody,
+  idParams,
+  milestoneBody,
+  milestonePatch,
+  observationBody,
+  profileBody,
+  rangeQuery,
+} from '../validators/recovery.validators.js';
 import { NOT_FOUND_PAGE, sendHtml } from '../utils/djangoResponses.js';
 
 // Django reads form posts into request.POST. Parsers are attached per route,
@@ -103,6 +113,83 @@ function routeTable(deps) {
     { method: 'all', path: '/exercise/sessions/', handlers: [postOnly], note: 'E23 non-POST → 405' },
     // Approved addition.
     { method: 'get', path: '/api/health', handlers: [health], note: 'health' },
+    ...nexivoRoutes(deps),
+  ];
+}
+
+/**
+ * Nexivo JSON API under /api/ (no trailing slash, like /api/health). Unsafe
+ * methods need CSRF, as E23 does. A logged-in patient reaches only their own
+ * data; requests without a patient session are clinician requests, open like
+ * POST /doctor_info because clinicians have no login yet.
+ */
+function nexivoRoutes({ recovery, csrfProtect }) {
+  const check = (schemas) => validate(schemas, { onInvalid: recovery.invalid });
+  const json = jsonBody(recovery.invalid);
+  const params = idParams;
+  return [
+    { method: 'get', path: '/api/config/scoring', handlers: [recovery.getConfig], note: 'M5' },
+    // Admin only in the spec; open until admins can log in (D2).
+    {
+      method: 'post',
+      path: '/api/config/scoring',
+      handlers: [csrfProtect, json, check({ body: configBody }), recovery.createConfig],
+      note: 'M2/M5',
+    },
+    {
+      method: 'get',
+      path: '/api/patients/:id/recovery-profile',
+      handlers: [check({ params }), ownPatientOnly, recovery.getProfile],
+      note: 'M1',
+    },
+    {
+      method: 'put',
+      path: '/api/patients/:id/recovery-profile',
+      handlers: [csrfProtect, json, check({ params, body: profileBody }), ownPatientOnly, recovery.putProfile],
+      note: 'M1',
+    },
+    {
+      method: 'get',
+      path: '/api/patients/:id/observations',
+      handlers: [check({ params, query: rangeQuery }), ownPatientOnly, recovery.listObservations],
+      note: 'M1',
+    },
+    {
+      method: 'post',
+      path: '/api/patients/:id/observations',
+      handlers: [
+        csrfProtect,
+        json,
+        check({ params, body: observationBody() }),
+        ownPatientOnly,
+        recovery.createObservation,
+      ],
+      note: 'M1',
+    },
+    {
+      method: 'post',
+      path: '/api/observations/:id/corrections',
+      handlers: [csrfProtect, json, check({ params, body: correctionBody() }), recovery.correctObservation],
+      note: 'M1 (owner checked in the service)',
+    },
+    {
+      method: 'get',
+      path: '/api/patients/:id/milestones',
+      handlers: [check({ params }), ownPatientOnly, recovery.listMilestones],
+      note: 'M1',
+    },
+    {
+      method: 'post',
+      path: '/api/patients/:id/milestones',
+      handlers: [csrfProtect, json, check({ params, body: milestoneBody }), ownPatientOnly, recovery.addMilestone],
+      note: 'M1',
+    },
+    {
+      method: 'patch',
+      path: '/api/milestones/:id',
+      handlers: [csrfProtect, json, check({ params, body: milestonePatch }), recovery.patchMilestone],
+      note: 'M1 (owner checked in the service)',
+    },
   ];
 }
 

@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
         '/doctor_info': backend,
         '/exercise/sessions/': backend,
         '/static/': backend,
+        '/api/': backend, // Nexivo JSON API (and /api/health)
       }
     }
   }
