@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Heart, Dumbbell, MessageSquare, Calendar, TrendingUp, Clock, CheckCircle2, Target, Activity, ClipboardCheck, HeartPulse } from 'lucide-react';
+import { Heart, Dumbbell, MessageSquare, Calendar, TrendingUp, Clock, CheckCircle2, Target, Activity, ClipboardCheck, HeartPulse, Move } from 'lucide-react';
 import { Card, InfoCard, WelcomeSection } from '../components';
 import { usePatientData } from '../hooks/usePatientData';
 
@@ -193,6 +193,14 @@ export default function PatientDashboard() {
                                 >
                                     <ClipboardCheck className="w-6 h-6 mb-2" />
                                     <div className="text-sm font-semibold">Daily Check-in</div>
+                                </button>
+
+                                <button
+                                    onClick={() => navigate('/patient/movement-test')}
+                                    className="col-span-2 p-4 bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl transition-all hover:scale-105 shadow-lg flex flex-col items-center justify-center"
+                                >
+                                    <Move className="w-6 h-6 mb-2" />
+                                    <div className="text-sm font-semibold">Movement Test</div>
                                 </button>
                             </div>
                         </Card>

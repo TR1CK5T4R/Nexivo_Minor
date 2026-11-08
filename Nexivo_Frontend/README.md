@@ -71,6 +71,7 @@ All backend calls go through `src/services/djangoApi.js` (named after the backen
 | Chat                                | `/patient/chat`                               | `POST /patient/chatbot/send/`                                                                                          |
 | Exercises                           | `/patient/exercises`, `/patient/exercise/:id` | demo videos from `/static/…`; finished sets saved with `POST /exercise/sessions/`                                      |
 | Doctor dashboard, medical dashboard | `/doctor`, `/medical-dashboard`               | — (sample data; links to the recovery overview and research dashboard)                                                 |
+| Movement test                       | `/patient/movement-test`                      | — (camera only; results aren't saved yet)                                                                              |
 | Daily check-in                      | `/patient/check-in`                           | `GET /api/config/scoring`, `GET`/`PUT /api/patients/:id/recovery-profile`, `POST /api/patients/:id/observations`       |
 | My Recovery / patient recovery      | `/patient/recovery`, `/doctor/patients/:id`   | `GET /api/patients/:id/…` (scores, timeline, alerts, milestones), `PATCH /api/alerts/:id`, `PATCH /api/milestones/:id` |
 | Recovery overview                   | `/doctor/overview`                            | `GET /api/clinician/overview`                                                                                          |

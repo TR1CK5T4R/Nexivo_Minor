@@ -14,6 +14,7 @@ import ChatInterface from './pages/ChatInterface';
 import ExerciseSelection from './pages/ExerciseSelection';
 import ExerciseWorkout from './pages/ExerciseWorkout';
 import CheckInForm from './pages/CheckInForm';
+import MovementTest from './pages/MovementTest';
 import PatientRecovery from './pages/PatientRecovery';
 import ClinicianOverview from './pages/ClinicianOverview';
 import ResearchDashboard from './pages/ResearchDashboard';
@@ -46,6 +47,7 @@ function App() {
 
           {/* Nexivo recovery monitoring */}
           <Route path="/patient/check-in" element={<CheckInForm />} />
+          <Route path="/patient/movement-test" element={<MovementTest />} />
           <Route path="/patient/recovery" element={<PatientRecovery />} />
           <Route path="/doctor/overview" element={<ClinicianOverview />} />
           <Route path="/doctor/patients/:id" element={<PatientRecovery />} />
