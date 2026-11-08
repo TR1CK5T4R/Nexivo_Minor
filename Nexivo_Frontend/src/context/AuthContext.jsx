@@ -14,7 +14,9 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+    // `user` is always the logged-in patient, `doctor` the logged-in doctor. At most one is set.
     const [user, setUser] = useState(null);
+    const [doctor, setDoctor] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -26,6 +28,13 @@ export const AuthProvider = ({ children }) => {
     const checkAuthStatus = async () => {
         try {
             setLoading(true);
+            const { doctor: currentDoctor } = await djangoAPI.doctor.getCurrent();
+            setDoctor(currentDoctor);
+            if (currentDoctor) {
+                setUser(null);
+                return;
+            }
+
             const response = await djangoAPI.patient.getDashboard();
 
             if (response && response.patient) {
@@ -42,6 +51,7 @@ export const AuthProvider = ({ children }) => {
             console.error('[AuthContext] Dashboard fetch error:', err);
             // User is not logged in, which is fine
             setUser(null);
+            setDoctor(null);
         } finally {
             setLoading(false);
         }
@@ -82,12 +92,26 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const loginDoctor = async (email, password) => {
+        const { doctor: loggedIn } = await djangoAPI.doctor.login(email, password);
+        setDoctor(loggedIn);
+        setUser(null);
+    };
+
+    const logoutDoctor = async () => {
+        await djangoAPI.doctor.logout();
+        setDoctor(null);
+    };
+
     const value = {
         user,
+        doctor,
         loading,
         error,
         login,
         logout,
+        loginDoctor,
+        logoutDoctor,
         isAuthenticated: !!user,
         checkAuthStatus,
     };

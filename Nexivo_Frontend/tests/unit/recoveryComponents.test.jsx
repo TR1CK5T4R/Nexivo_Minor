@@ -2,9 +2,12 @@
 // render, so no browser needed). Charts need a measured container, so they are
 // only checked for their accessible wrapper.
 import { renderToStaticMarkup } from 'react-dom/server';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { AlertList } from '../../src/components/AlertList';
 import { FactorList } from '../../src/components/FactorList';
+import { RequireDoctor } from '../../src/components/RequireDoctor';
+import AuthContext from '../../src/context/AuthContext';
 import { MilestoneChecklist } from '../../src/components/MilestoneChecklist';
 import { Recommendation } from '../../src/components/Recommendation';
 import { ScoreCard } from '../../src/components/ScoreCard';
@@ -92,5 +95,22 @@ describe('recovery components render API data', () => {
     it('ScoreTrendChart renders its accessible wrapper or the empty message', () => {
         expect(html(<ScoreTrendChart rows={chartRows([score])} />)).toContain('aria-label="Recovery score by day after surgery');
         expect(html(<ScoreTrendChart rows={[]} />)).toContain('after the first check-in');
+    });
+});
+
+describe('RequireDoctor', () => {
+    const page = (auth) =>
+        renderToStaticMarkup(
+            <AuthContext.Provider value={auth}>
+                <MemoryRouter>
+                    <RequireDoctor>secret page</RequireDoctor>
+                </MemoryRouter>
+            </AuthContext.Provider>,
+        );
+
+    it('shows the page only to a logged-in doctor', () => {
+        expect(page({ doctor: { name: 'Dr' }, loading: false })).toContain('secret page');
+        expect(page({ doctor: null, loading: false })).not.toContain('secret page');
+        expect(page({ doctor: null, loading: true })).not.toContain('secret page');
     });
 });

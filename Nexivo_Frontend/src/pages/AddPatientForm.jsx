@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus, User, Mail, FileText, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Card, Button, FormInput, FormTextarea, FormHeader, Navbar } from '../components';
+import { useAuth } from '../context/AuthContext';
 import { useDoctorData } from '../hooks/useDoctorData';
 
 export default function AddPatientForm() {
     const navigate = useNavigate();
+    const { doctor, logoutDoctor } = useAuth();
     const [formData, setFormData] = useState({
         patientName: '',
         email: '',
@@ -97,10 +99,11 @@ export default function AddPatientForm() {
         <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-emerald-50/20">
             {/* Navbar */}
             <Navbar
-                doctorName="Dr. Anderson"
+                doctorName={doctor.name}
                 specialty="Cardiologist"
                 notificationCount={8}
                 variant="green"
+                onLogout={logoutDoctor}
             />
 
             <div className="max-w-7xl mx-auto px-6 py-8">

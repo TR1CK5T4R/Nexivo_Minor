@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { FlaskConical, Users, Bell, TrendingUp, FileText, UserPlus, ClipboardList, Calendar, Activity, Pill, Phone, Video } from 'lucide-react';
 import { Navbar, WelcomeSection, StatCard, ActionCard, Card, Button } from '../components';
+import { useAuth } from '../context/AuthContext';
 
 export default function DoctorDashboard() {
     const navigate = useNavigate();
+    const { doctor, logoutDoctor } = useAuth();
     const stats = [
         {
             icon: Users,
@@ -49,10 +51,11 @@ export default function DoctorDashboard() {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/20">
             {/* Top Navbar */}
             <Navbar
-                doctorName="Dr. Anderson"
+                doctorName={doctor.name}
                 specialty="Cardiologist"
                 notificationCount={8}
                 variant="green"
+                onLogout={logoutDoctor}
             />
 
             <div className="max-w-7xl mx-auto px-6 py-8">

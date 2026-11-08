@@ -8,6 +8,8 @@ import DoctorDashboard from './pages/DoctorDashboard';
 import PatientDashboard from './pages/PatientDashboard';
 import PatientDashboardsimple from './pages/PatientDashboardsimple';
 import PatientLogin from './pages/PatientLogin';
+import DoctorLogin from './pages/DoctorLogin';
+import { RequireDoctor } from './components/RequireDoctor';
 import AddPatientForm from './pages/AddPatientForm';
 import AddPatientFormStandalone from './pages/AddPatientFormStandalone';
 import ChatInterface from './pages/ChatInterface';
@@ -32,8 +34,9 @@ function App() {
           <Route path="/" element={<ReviveCare />} />
 
           {/* Dashboard Routes */}
-          <Route path="/medical-dashboard" element={<MedicalDashboard />} />
-          <Route path="/doctor" element={<DoctorDashboard />} />
+          <Route path="/medical-dashboard" element={<RequireDoctor><MedicalDashboard /></RequireDoctor>} />
+          <Route path="/doctor/login" element={<DoctorLogin />} />
+          <Route path="/doctor" element={<RequireDoctor><DoctorDashboard /></RequireDoctor>} />
 
           {/* Patient Routes */}
           <Route path="/patient/login" element={<PatientLogin />} />
@@ -49,17 +52,17 @@ function App() {
           <Route path="/patient/check-in" element={<CheckInForm />} />
           <Route path="/patient/movement-test" element={<MovementTest />} />
           <Route path="/patient/recovery" element={<PatientRecovery />} />
-          <Route path="/doctor/overview" element={<ClinicianOverview />} />
-          <Route path="/doctor/patients/:id" element={<PatientRecovery />} />
-          <Route path="/research" element={<ResearchDashboard />} />
+          <Route path="/doctor/overview" element={<RequireDoctor><ClinicianOverview /></RequireDoctor>} />
+          <Route path="/doctor/patients/:id" element={<RequireDoctor><PatientRecovery /></RequireDoctor>} />
+          <Route path="/research" element={<RequireDoctor><ResearchDashboard /></RequireDoctor>} />
 
           {/* Chat Interface Route - Patient AI Assistant */}
           <Route path="/patient/chat" element={<ChatInterface />} />
           <Route path="/chat" element={<ChatInterface />} />
 
           {/* Form Routes */}
-          <Route path="/doctor/add-patient" element={<AddPatientForm />} />
-          <Route path="/add-patient/standalone" element={<AddPatientFormStandalone />} />
+          <Route path="/doctor/add-patient" element={<RequireDoctor><AddPatientForm /></RequireDoctor>} />
+          <Route path="/add-patient/standalone" element={<RequireDoctor><AddPatientFormStandalone /></RequireDoctor>} />
 
           {/* Redirect unknown routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,10 +1,11 @@
-import { Heart, Bell } from 'lucide-react';
+import { Heart, Bell, LogOut } from 'lucide-react';
 
 export const Navbar = ({
     doctorName = 'Dr. Anderson',
     specialty = 'Cardiologist',
     notificationCount = 0,
-    variant = 'green' // 'green' or 'white'
+    variant = 'green', // 'green' or 'white'
+    onLogout
 }) => {
     const variantStyles = {
         green: {
@@ -68,6 +69,13 @@ export const Navbar = ({
                                 </p>
                             </div>
                         </div>
+
+                        {onLogout && (
+                            <button type="button" onClick={onLogout} className={`flex items-center gap-2 p-2 ${styles.bellHover} ${styles.text} rounded-lg transition-colors`}>
+                                <LogOut className="w-5 h-5" aria-hidden="true" />
+                                <span className="text-sm font-medium">Log out</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

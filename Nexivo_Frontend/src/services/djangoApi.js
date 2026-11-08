@@ -155,8 +155,13 @@ export const patientAPI = {
 export const doctorAPI = {
     // Submit patient information from doctor
     submitPatientInfo: async (patientData) => {
-        return apiCall('/doctor_info', 'POST', patientData);
+        return unsafeCall('/doctor_info', 'POST', patientData);
     },
+    // Returns {doctor}. A wrong email or password rejects with the server's message.
+    login: (email, password) => unsafeCall('/api/doctor/login', 'POST', { email, password }),
+    logout: () => unsafeCall('/api/doctor/logout', 'POST'),
+    // Returns {doctor}: null when no doctor is logged in.
+    getCurrent: () => apiCall('/api/doctor/me'),
 };
 
 // ==================== Chatbot API ====================

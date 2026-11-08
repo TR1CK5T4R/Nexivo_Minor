@@ -39,7 +39,7 @@ cp .env.example .env
 # e.g. the output of: openssl rand -hex 32
 npm install
 npm run db:migrate   # creates the tables and the default scoring config
-npm run db:demo      # demo patients with recovery histories (safe to run again)
+npm run db:demo      # demo doctor, and demo patients with recovery histories (safe to run again)
 npm run dev          # http://localhost:3000
 ```
 
@@ -55,7 +55,9 @@ Open http://localhost:5173.
 
 ## Try it
 
-**As a patient:** choose **Patient** and log in with a demo account (made-up data; login checks only the email in this version, so any password works). Then open **My Recovery** or **Daily Check-in** on the dashboard.
+All demo accounts hold made-up data and are created by `npm run db:demo`.
+
+**As a patient:** choose **Patient Portal** and log in with a demo account (login checks only the email in this version, so any password works). Then open **My Recovery** or **Daily Check-in** on the dashboard.
 
 | Email                           | Surgery (made up)                    | Recovery status                              |
 | ------------------------------- | ------------------------------------ | -------------------------------------------- |
@@ -64,7 +66,13 @@ Open http://localhost:5173.
 | `demo.shoulder@revivecare.test` | Rotator cuff repair, 6 weeks ago     | Normal                                       |
 | `demo.appendix@revivecare.test` | Appendectomy, 4 days ago             | Normal (limited history: only two check-ins) |
 
-**As a clinician:** open http://localhost:5173/doctor (no login in this version). **Recovery Overview** lists the patients, most urgent first; click one to see their score, factors, charts, alerts, milestones and timeline. **Research Evaluation** opens the research dashboard.
+**As a doctor:** choose **Doctor Portal** (http://localhost:5173/doctor) and log in. Here the password is checked.
+
+| Email                         | Password   |
+| ----------------------------- | ---------- |
+| `demo.doctor@revivecare.test` | `demo1234` |
+
+**Recovery Overview** lists the patients, most urgent first; click one to see their score, factors, charts, alerts, milestones and timeline. **Research Evaluation** opens the research dashboard.
 
 ## Configuration
 
@@ -77,9 +85,12 @@ Open http://localhost:5173.
 curl -s http://localhost:3000/api/config/scoring
 
 # Create and activate a new version (weights must add up to 1.0; every setting is checked).
-# Write requests need the CSRF cookie and header:
+# Write requests need the CSRF cookie and header, and this one a doctor login:
 curl -s -c jar.txt http://localhost:3000/csrf/ > /dev/null
 TOKEN=$(awk '$6 == "csrftoken" { print $7 }' jar.txt | sed 's/%7C/|/g')
+curl -s -b jar.txt -c jar.txt -H "X-CSRFToken: $TOKEN" -H 'Content-Type: application/json' \
+  -X POST http://localhost:3000/api/doctor/login \
+  -d '{"email": "demo.doctor@revivecare.test", "password": "demo1234"}'
 curl -s http://localhost:3000/api/config/scoring \
   | node -e 'let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
       const { params } = JSON.parse(s);
@@ -130,13 +141,13 @@ Both folders also have `npm run lint`. The backend README covers coverage, golde
 ## Known limitations
 
 - Patient login checks only the email address; there are no real passwords yet.
-- Clinicians have no login. Without a patient session the API treats a request as a clinician's, so the doctor pages, the overview and the research tools are open. A logged-in patient can reach only their own data.
+- Every doctor can see every patient: nothing limits a doctor to their assigned patients yet. There is also no screen to create doctors or change a password; the demo doctor comes from `npm run db:demo`.
 - Days after surgery are counted in UTC calendar days.
 - Scores, alerts and categories come from deterministic rules with starting values for a research prototype, not clinically validated thresholds. There is no machine learning and no forecasting.
 
 ## The story behind the backend
 
-I first built the backend in Django. To learn Node.js and PostgreSQL properly, I rewrote it as a Node.js + Express API with raw SQL, keeping every endpoint and rule the frontend relies on. To prove nothing changed, I wrote a parity suite that sends the same 116 request scenarios to both backends and compares the answers. Nexivo then grew on top of that codebase without changing any of the existing endpoints, and ReviveCare's rule logic now serves as the baseline Nexivo is measured against.
+I first built the backend in Django. To learn Node.js and PostgreSQL properly, I rewrote it as a Node.js + Express API with raw SQL, keeping every endpoint and rule the frontend relies on. To prove nothing changed, I wrote a parity suite that sends the same 116 request scenarios to both backends and compares the answers. Nexivo then grew on top of that codebase, and the only existing endpoint whose behaviour changed is `POST /doctor_info`, which now needs a doctor login. ReviveCare's rule logic now serves as the baseline Nexivo is measured against.
 
 ## Author
 

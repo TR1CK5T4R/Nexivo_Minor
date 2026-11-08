@@ -33,7 +33,9 @@ Open the app, choose **Patient**, and log in with one of these accounts. They ho
 
 After the backend's `npm run db:demo`, each has a recovery history: Knee needs attention, Hip is slower than expected, Shoulder is normal, Appendix has only two check-ins.
 
-Patient login is **email only** in this version: the password field has to be filled in, but its value isn't checked. The doctor pages need no login; if you add a patient there, please use made-up details. The exercise pages ask for camera access.
+For the doctor pages, choose **Doctor Portal** and log in with `demo.doctor@revivecare.test`, password `demo1234`. Every doctor page redirects to that login until you do. If you add a patient there, please use made-up details.
+
+Patient login is **email only** in this version: the password field has to be filled in, but its value isn't checked. Doctor passwords are checked. The exercise pages ask for camera access.
 
 ## Tech stack
 
@@ -70,6 +72,7 @@ All backend calls go through `src/services/djangoApi.js` (named after the backen
 | Patient dashboard                   | `/patient/dashboard`                          | `GET /patient/dashboard/`                                                                                              |
 | Chat                                | `/patient/chat`                               | `POST /patient/chatbot/send/`                                                                                          |
 | Exercises                           | `/patient/exercises`, `/patient/exercise/:id` | demo videos from `/static/…`; finished sets saved with `POST /exercise/sessions/`                                      |
+| Doctor login                        | `/doctor/login`                               | `GET /csrf/`, `POST /api/doctor/login`, `GET /api/doctor/me`                                                           |
 | Doctor dashboard, medical dashboard | `/doctor`, `/medical-dashboard`               | — (sample data; links to the recovery overview and research dashboard)                                                 |
 | Movement test                       | `/patient/movement-test`                      | — (camera only; results aren't saved yet)                                                                              |
 | Daily check-in                      | `/patient/check-in`                           | `GET /api/config/scoring`, `GET`/`PUT /api/patients/:id/recovery-profile`, `POST /api/patients/:id/observations`       |
