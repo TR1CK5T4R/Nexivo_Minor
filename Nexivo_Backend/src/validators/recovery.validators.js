@@ -21,6 +21,12 @@ export const idParams = z.object({
     .transform(Number),
 });
 
+// Same normalising as the patient login. The cap only keeps a huge password from reaching the hash.
+export const doctorLoginBody = z.object({
+  email: z.string().trim().toLowerCase().min(1).max(254),
+  password: z.string().min(1).max(256),
+});
+
 export const rangeQuery = z.object({ from: timestamp.optional(), to: timestamp.optional() });
 
 export const profileBody = z.object({

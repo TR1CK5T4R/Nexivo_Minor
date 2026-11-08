@@ -1,6 +1,9 @@
-// Creates (or refreshes) the demo patient accounts listed in README.md, so anyone
-// trying the app can log in without real data. Safe to run again: it goes through
-// the same upsert as POST /doctor_info. Works on any database, production included.
+// Creates (or refreshes) the demo accounts listed in README.md, so anyone trying the
+// app can log in without real data. Safe to run again: patients go through the same
+// upsert as POST /doctor_info. Works on any database, production included.
+//
+// The demo doctor can read and change every patient and its password is published,
+// so in production it is only created with DEMO_DOCTOR_PASSWORD set.
 //
 // Each demo patient also gets a Nexivo recovery history (surgery profile, milestones,
 // check-ins) saved through the real services, so scores, alerts and explanations are
@@ -12,10 +15,12 @@
 
 import 'dotenv/config';
 import { closePool, initPool, query } from '../src/db/pool.js';
+import { upsertDoctor } from '../src/repositories/doctor.repository.js';
 import { hasObservations } from '../src/repositories/recovery.repository.js';
 import { upsertPatient } from '../src/services/doctor.service.js';
 import { createObservation } from '../src/services/observation.service.js';
 import { saveProfile } from '../src/services/recovery.service.js';
+import { makePassword } from '../src/utils/djangoPassword.js';
 import { resolveDatabase } from './lib/target.js';
 
 // Check-in rows: [day after surgery, pain, mobility, fatigue, symptoms, doses taken, doses prescribed].
@@ -110,8 +115,22 @@ const DEMO_PATIENTS = [
   },
 ];
 
+const DEMO_DOCTOR = {
+  name: 'Demo Doctor',
+  email: 'demo.doctor@revivecare.test',
+  specialty: 'Orthopaedics',
+  licenseNumber: 'DEMO-0001',
+};
+
 const DAY_MS = 86_400_000;
 const addDays = (date, days) => new Date(Date.parse(date) + days * DAY_MS).toISOString().slice(0, 10);
+
+async function seedDoctor() {
+  const password = process.env.DEMO_DOCTOR_PASSWORD || (process.env.NODE_ENV === 'production' ? null : 'demo1234');
+  if (!password) return console.log(`skipped  ${DEMO_DOCTOR.email}: production needs DEMO_DOCTOR_PASSWORD`);
+  await upsertDoctor({ ...DEMO_DOCTOR, passwordHash: await makePassword(password) });
+  console.log(`updated  ${DEMO_DOCTOR.email}: doctor login`);
+}
 
 async function seedRecovery(patientId, recovery) {
   if (await hasObservations(patientId)) return 'recovery history already there';
@@ -147,6 +166,7 @@ async function seedRecovery(patientId, recovery) {
 const target = resolveDatabase('DATABASE_URL');
 initPool({ connectionString: target.url, applicationName: 'revivecare-demo-accounts' });
 try {
+  await seedDoctor();
   for (const { recovery, ...patient } of DEMO_PATIENTS) {
     const { created, patientId } = await upsertPatient(patient);
     console.log(`${created ? 'created ' : 'updated '} ${patient.email}: ${await seedRecovery(patientId, recovery)}`);

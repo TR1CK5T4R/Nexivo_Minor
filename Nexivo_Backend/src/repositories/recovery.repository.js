@@ -93,7 +93,7 @@ export async function insertObservation(o, client) {
        (patient_id, observed_at, day_post_op, pain, mobility, fatigue, symptoms, doses_prescribed, doses_taken,
         notes, entered_by, source, corrects_observation_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-             -- a patient entry records that patient's login; clinicians have none yet
+             -- a patient entry records that patient's login; a doctor's entry is NULL, with source = 'clinician'
              CASE WHEN $11::varchar = 'patient' THEN (SELECT user_id FROM patients WHERE id = $1) END,
              $11::varchar, $12)
      RETURNING ${OBSERVATION_COLUMNS}`,

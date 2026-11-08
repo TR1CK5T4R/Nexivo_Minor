@@ -22,7 +22,7 @@ import { corsLikeDjango } from './middleware/cors.js';
 import { createCsrf } from './middleware/csrf.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
-import { chatRateLimit, loginRateLimit } from './middleware/rateLimit.js';
+import { chatRateLimit, doctorLoginRateLimit, loginRateLimit } from './middleware/rateLimit.js';
 import { requestId } from './middleware/requestId.js';
 import { createSession } from './middleware/session.js';
 import { staticFiles } from './middleware/staticFiles.js';
@@ -121,6 +121,7 @@ export function createApp({ config, logger }) {
     health,
     csrfProtect: csrf.csrfProtect,
     loginLimiter: loginRateLimit(config.loginRateLimit),
+    doctorLoginLimiter: doctorLoginRateLimit(config.loginRateLimit),
     chatLimiter: chatRateLimit(config.chatRateLimit),
   });
   app.use(router);

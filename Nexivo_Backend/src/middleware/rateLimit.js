@@ -4,7 +4,7 @@
 // In-memory counter: correct for a single Node process.
 
 import { rateLimit } from 'express-rate-limit';
-import { errorPage, sendHtml, sendPythonJson } from '../utils/djangoResponses.js';
+import { errorPage, sendHtml, sendJson, sendPythonJson } from '../utils/djangoResponses.js';
 
 export const LOGIN_SUCCESS_LOCATION = '/patient/dashboard/';
 
@@ -27,6 +27,28 @@ export function loginRateLimit({ max, windowMs }) {
     handler: (req, res) => {
       req.log?.warn('login rate limit reached');
       sendHtml(res, 429, TOO_MANY_PAGE);
+    },
+  });
+}
+
+/**
+ * Brute-force protection for POST /api/doctor/login: failed attempts only, per
+ * client IP. Separate from the patient limiter because login there answers 302
+ * either way and here failure is a 4xx, and the answer is JSON.
+ *
+ * @param {{ max: number, windowMs: number }} options config.loginRateLimit
+ * @returns {import('express').RequestHandler}
+ */
+export function doctorLoginRateLimit({ max, windowMs }) {
+  return rateLimit({
+    windowMs,
+    limit: max,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    handler: (req, res) => {
+      req.log?.warn('doctor login rate limit reached');
+      sendJson(res, 429, { error: 'Too many login attempts. Please try again later.' });
     },
   });
 }

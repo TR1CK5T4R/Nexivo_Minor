@@ -1,9 +1,8 @@
 // Nexivo recovery profile, milestones and the active scoring config.
 // Plain functions: no req/res, no SQL.
 //
-// `actor.patientId` is the logged-in patient (or null for a clinician request:
-// clinicians have no login yet, so those requests are open like POST /doctor_info).
-// A patient may only touch their own rows.
+// `actor.patientId` is the logged-in patient, or null for a logged-in doctor (the
+// routes let nobody else through). A patient may only touch their own rows.
 
 import { withTransaction } from '../db/tx.js';
 import {

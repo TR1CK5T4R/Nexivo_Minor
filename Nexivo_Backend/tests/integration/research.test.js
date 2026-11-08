@@ -6,7 +6,7 @@ import { createPatient, truncateAll } from '../helpers/db.js';
 import { apiClient } from '../helpers/nexivo.js';
 
 let app;
-let c; // clinician client (no login)
+let c; // doctor client
 beforeEach(async () => {
   await truncateAll();
   ({ app } = makeApp());

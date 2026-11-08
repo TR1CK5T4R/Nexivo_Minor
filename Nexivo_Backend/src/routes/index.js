@@ -4,7 +4,7 @@
 // middleware/notFound.js, so nothing has to be listed twice.
 
 import express from 'express';
-import { notPatient, ownPatientOnly, requirePatient } from '../middleware/auth.js';
+import { ownPatientOnly, requireDoctor, requireLogin, requirePatient } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { exerciseSessionSchema } from '../validators/exercise.validators.js';
 import { configBody } from '../config/scoringConfig.js';
@@ -13,6 +13,7 @@ import {
   alertsQuery,
   correctionBody,
   datasetBody,
+  doctorLoginBody,
   evaluationBody,
   idParams,
   milestoneBody,
@@ -72,8 +73,14 @@ function routeTable(deps) {
     { method: 'all', path: '/csrf/', handlers: [csrfProtect, home.csrf], note: 'E03' },
     // ── Doctor app ──
     // E04 doc_port/ and E05 doc_info_page/ render dropped HTML pages: no route, so 404.
-    // E06 urls.py: path('doctor_info', doctor_info). No trailing slash. @csrf_exempt + @require_POST.
-    { method: 'post', path: '/doctor_info', handlers: [rawBody, doctor.doctorInfo], note: 'E06' },
+    // E06 urls.py: path('doctor_info', doctor_info). No trailing slash. @require_POST.
+    // Intentional difference: Django left it open and @csrf_exempt; now it needs a doctor login, so CSRF too.
+    {
+      method: 'post',
+      path: '/doctor_info',
+      handlers: [csrfProtect, requireDoctor, rawBody, doctor.doctorInfo],
+      note: 'E06',
+    },
     { method: 'all', path: '/doctor_info', handlers: [postOnly], note: 'E06 non-POST → 405' },
     // ── Patients app (auth) ──
     // E07 urls.py: path('login/', login). @csrf_exempt. GET (HTML form) dropped.
@@ -126,22 +133,35 @@ function routeTable(deps) {
 /**
  * Nexivo JSON API under /api/ (no trailing slash, like /api/health). Unsafe
  * methods need CSRF, as E23 does. A logged-in patient reaches only their own
- * data; requests without a patient session are clinician requests, open like
- * POST /doctor_info because clinicians have no login yet.
+ * data, a logged-in doctor any patient's; without a login the answer is 401.
  */
-function nexivoRoutes({ recovery, research, csrfProtect }) {
+function nexivoRoutes({ auth, recovery, research, csrfProtect, doctorLoginLimiter }) {
   const check = (schemas) => validate(schemas, { onInvalid: recovery.invalid });
   const json = jsonBody(recovery.invalid);
   const largeJson = (req, res, next) =>
     parseLargeJson(req, res, (err) => (err ? recovery.invalid(null, req, res) : next()));
   const params = idParams;
   return [
+    {
+      method: 'post',
+      path: '/api/doctor/login',
+      handlers: [
+        csrfProtect,
+        doctorLoginLimiter,
+        json,
+        validate({ body: doctorLoginBody }, { onInvalid: recovery.invalid }),
+        auth.doctorLogin,
+      ],
+      note: 'doctor login',
+    },
+    { method: 'post', path: '/api/doctor/logout', handlers: [csrfProtect, auth.doctorLogout], note: 'doctor login' },
+    { method: 'get', path: '/api/doctor/me', handlers: [auth.doctorMe], note: 'doctor login' },
     { method: 'get', path: '/api/config/scoring', handlers: [recovery.getConfig], note: 'M5' },
-    // Admin only in the spec; open until admins can log in (D2), but never to a logged-in patient.
+    // Admin only in the spec; there is no admin role, so any doctor.
     {
       method: 'post',
       path: '/api/config/scoring',
-      handlers: [csrfProtect, notPatient, json, check({ body: configBody }), recovery.createConfig],
+      handlers: [csrfProtect, requireDoctor, json, check({ body: configBody }), recovery.createConfig],
       note: 'M2/M5',
     },
     {
@@ -177,7 +197,13 @@ function nexivoRoutes({ recovery, research, csrfProtect }) {
     {
       method: 'post',
       path: '/api/observations/:id/corrections',
-      handlers: [csrfProtect, json, check({ params, body: correctionBody() }), recovery.correctObservation],
+      handlers: [
+        csrfProtect,
+        requireLogin,
+        json,
+        check({ params, body: correctionBody() }),
+        recovery.correctObservation,
+      ],
       note: 'M1 (owner checked in the service)',
     },
     {
@@ -210,7 +236,7 @@ function nexivoRoutes({ recovery, research, csrfProtect }) {
       handlers: [check({ params, query: rangeQuery }), ownPatientOnly, recovery.timeline],
       note: 'M5',
     },
-    { method: 'get', path: '/api/clinician/overview', handlers: [notPatient, recovery.overview], note: 'M5' },
+    { method: 'get', path: '/api/clinician/overview', handlers: [requireDoctor, recovery.overview], note: 'M5' },
     {
       method: 'get',
       path: '/api/patients/:id/alerts',
@@ -220,34 +246,34 @@ function nexivoRoutes({ recovery, research, csrfProtect }) {
     {
       method: 'patch',
       path: '/api/alerts/:id',
-      handlers: [csrfProtect, json, check({ params, body: alertPatch }), recovery.patchAlert],
+      handlers: [csrfProtect, requireLogin, json, check({ params, body: alertPatch }), recovery.patchAlert],
       note: 'M3 (owner checked in the service)',
     },
     {
       method: 'patch',
       path: '/api/milestones/:id',
-      handlers: [csrfProtect, json, check({ params, body: milestonePatch }), recovery.patchMilestone],
+      handlers: [csrfProtect, requireLogin, json, check({ params, body: milestonePatch }), recovery.patchMilestone],
       note: 'M1 (owner checked in the service)',
     },
-    // ── Research (M6): clinician-only, never mixed with clinical data ──
-    { method: 'get', path: '/api/research/datasets', handlers: [notPatient, research.listDatasets], note: 'M6' },
+    // ── Research (M6): doctors only, never mixed with clinical data ──
+    { method: 'get', path: '/api/research/datasets', handlers: [requireDoctor, research.listDatasets], note: 'M6' },
     {
       method: 'post',
       path: '/api/research/datasets',
-      handlers: [csrfProtect, notPatient, largeJson, check({ body: datasetBody }), research.createDataset],
+      handlers: [csrfProtect, requireDoctor, largeJson, check({ body: datasetBody }), research.createDataset],
       note: 'M6',
     },
-    { method: 'get', path: '/api/research/evaluations', handlers: [notPatient, research.listRuns], note: 'M6' },
+    { method: 'get', path: '/api/research/evaluations', handlers: [requireDoctor, research.listRuns], note: 'M6' },
     {
       method: 'post',
       path: '/api/research/evaluations',
-      handlers: [csrfProtect, notPatient, json, check({ body: evaluationBody }), research.createRun],
+      handlers: [csrfProtect, requireDoctor, json, check({ body: evaluationBody }), research.createRun],
       note: 'M6',
     },
     {
       method: 'get',
       path: '/api/research/evaluations/:id',
-      handlers: [notPatient, check({ params }), research.getRun],
+      handlers: [requireDoctor, check({ params }), research.getRun],
       note: 'M6',
     },
   ];

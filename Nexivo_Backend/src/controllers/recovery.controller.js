@@ -21,7 +21,7 @@ import { getTimeline } from '../services/timeline.service.js';
 import { sendJson } from '../utils/djangoResponses.js';
 import { fieldErrors } from '../validators/exercise.validators.js';
 
-// The logged-in patient, or null for a clinician request (no clinician login yet).
+// The logged-in patient, or null for a doctor (the routes let nobody else through).
 const actor = (req) => ({ patientId: sessionPatientId(req) });
 
 export function createRecoveryController() {

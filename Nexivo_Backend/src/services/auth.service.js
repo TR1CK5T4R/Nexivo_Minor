@@ -1,6 +1,8 @@
-// Patient login rules. Plain functions: no req/res, no SQL.
+// Login rules. Plain functions: no req/res, no SQL.
 
+import { findDoctorByEmail } from '../repositories/doctor.repository.js';
 import { findPatientByEmail } from '../repositories/patient.repository.js';
+import { verifyPassword } from '../utils/djangoPassword.js';
 import { pyLower, pyStrip } from '../utils/pythonCompat.js';
 
 /**
@@ -27,4 +29,19 @@ export function normalizeLoginEmail(formValue) {
  */
 export async function findLoginPatient(email) {
   return findPatientByEmail(email);
+}
+
+/**
+ * The doctor these credentials log in as, or null. verifyPassword spends a real
+ * hash's time even without an account, so timing doesn't reveal which emails exist.
+ *
+ * @param {string} email already normalised
+ * @param {string} password
+ * @returns {Promise<{ id: number, name: string, email: string } | null>}
+ */
+export async function authenticateDoctor(email, password) {
+  const doctor = await findDoctorByEmail(email);
+  const valid = await verifyPassword(password, doctor?.password);
+  if (!valid || !doctor.is_active) return null;
+  return { id: doctor.id, name: doctor.name, email: doctor.email };
 }

@@ -2,6 +2,8 @@
 
 import { query } from '../../src/db/pool.js';
 import { withTransaction } from '../../src/db/tx.js';
+import { upsertDoctor } from '../../src/repositories/doctor.repository.js';
+import { makePassword } from '../../src/utils/djangoPassword.js';
 
 export async function truncateAll() {
   await query(
@@ -34,6 +36,21 @@ export async function createPatient({ name, email, info = 'Knee replacement. Tes
       values.info,
     ]);
     return { id: patients[0].id, userId: users[0].id, ...values };
+  });
+}
+
+export const TEST_DOCTOR = { name: 'Dr Test', email: 'doctor@example.test', password: 'correct-horse' };
+// Few iterations: most integration tests log in, and this isn't the hash under test.
+const testDoctorHash = makePassword(TEST_DOCTOR.password, { iterations: 1000 });
+
+/** The test doctor's account, created once per truncate. */
+export async function createDoctor() {
+  await upsertDoctor({
+    name: TEST_DOCTOR.name,
+    email: TEST_DOCTOR.email,
+    passwordHash: await testDoctorHash,
+    specialty: 'Orthopaedics',
+    licenseNumber: 'TEST-0001',
   });
 }
 

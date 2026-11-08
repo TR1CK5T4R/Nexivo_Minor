@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../src/app.js';
 import { testConfig } from '../helpers/app.js';
 import { createPatient, truncateAll } from '../helpers/db.js';
+import { doctorHeaders } from '../helpers/nexivo.js';
 
 /** The real app with an in-memory pino logger that records every "queries per request" line. */
 function appWithCounts() {
@@ -33,12 +34,15 @@ describe('queries per request (dev-only counter)', () => {
     const agent = request.agent(app);
     await agent.post('/login/').type('form').send({ email: 'p3@example.test' });
     await agent.get('/patient/dashboard/').set('Accept', 'application/json');
+    const auth = await doctorHeaders(app);
     await request(app)
       .post('/doctor_info')
+      .set(auth)
       .set('Content-Type', 'application/json')
       .send('{"email":"n@example.test","name":"n","info":"i"}');
     await new Promise((resolve) => setImmediate(resolve)); // let the last 'finish' log flush
     // doctor_info create: locked lookup + users insert + patients insert (BEGIN/SAVEPOINT/COMMIT not counted).
-    expect(counts).toEqual([1, 1, 3]);
+    // Between them, the doctor's own login: 1 lookup (the CSRF request runs none).
+    expect(counts.filter((n) => n > 0)).toEqual([1, 1, 1, 3]);
   });
 });

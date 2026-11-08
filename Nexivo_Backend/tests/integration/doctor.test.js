@@ -7,18 +7,26 @@ import { query } from '../../src/db/pool.js';
 import { makeApp } from '../helpers/app.js';
 import { setCookies } from '../helpers/cookies.js';
 import { createPatient, truncateAll } from '../helpers/db.js';
+import { apiClient, doctorHeaders } from '../helpers/nexivo.js';
 
 const SERVER_ERROR = '<h1>Server Error (500)</h1>';
 
 let app;
+let auth; // the logged-in doctor's cookies and CSRF headers
 beforeEach(async () => {
   await truncateAll();
   ({ app } = makeApp());
+  auth = await doctorHeaders(app);
 });
 
 /** POST a raw body to /doctor_info the way React does (JSON headers). */
 const post = (body, contentType = 'application/json') =>
-  request(app).post('/doctor_info').set('Content-Type', contentType).set('Accept', 'application/json').send(body);
+  request(app)
+    .post('/doctor_info')
+    .set(auth)
+    .set('Content-Type', contentType)
+    .set('Accept', 'application/json')
+    .send(body);
 
 /** Every stored patient, as the business columns Django had. */
 async function patients() {
@@ -95,6 +103,7 @@ describe('POST /doctor_info (E06): create', () => {
     async (type) => {
       const res = await request(app)
         .post('/doctor_info')
+        .set(auth)
         .set('Content-Type', type)
         // A string goes out as-is; supertest would re-serialize a Buffer or object for these types.
         .send('{"email": "e@x.test", "name": "n", "info": "i"}');
@@ -128,14 +137,15 @@ describe('POST /doctor_info (E06): update', () => {
     expect(await patients()).toHaveLength(2);
   });
 
-  it('lets anyone overwrite any patient: no auth, no CSRF, any Origin', async () => {
-    await createPatient({ email: 'asha@example.test' });
+  it('refuses an untrusted Origin, even with a doctor login and a valid token', async () => {
+    await createPatient({ email: 'asha@example.test', name: 'Asha' });
     const res = await request(app)
       .post('/doctor_info')
+      .set(auth)
       .set('Origin', 'http://evil.example')
       .send({ email: 'asha@example.test', name: 'Changed', info: 'Changed' });
-    expect(res.status).toBe(200);
-    expect((await patients())[0].name).toBe('Changed');
+    expect(res.status).toBe(403);
+    expect((await patients())[0].name).toBe('Asha');
   });
 
   it('two concurrent requests for a new email create exactly one patient', async () => {
@@ -196,7 +206,7 @@ describe('POST /doctor_info (E06): review follow-ups', () => {
     try {
       return await new Promise((resolve, reject) => {
         const req = http.request(
-          { port: server.address().port, method: 'POST', path: '/doctor_info', headers },
+          { port: server.address().port, method: 'POST', path: '/doctor_info', headers: { ...auth, ...headers } },
           (res) => {
             res.resume();
             res.on('end', () => resolve(res.statusCode));
@@ -259,7 +269,7 @@ describe('/doctor_info (E06): logged differences', () => {
       Buffer.from('"], "info": "i"}'),
     ]);
     // text/plain + Buffer: supertest sends the bytes untouched.
-    const res = await request(app).post('/doctor_info').set('Content-Type', 'text/plain').send(body);
+    const res = await request(app).post('/doctor_info').set(auth).set('Content-Type', 'text/plain').send(body);
     expect(res.status).toBe(500);
     expect(await patients()).toEqual([]);
   });
@@ -267,6 +277,7 @@ describe('/doctor_info (E06): logged differences', () => {
   it('a compressed body (Content-Encoding: gzip) is 400 and writes nothing; Django failed to decode it (500)', async () => {
     const res = await request(app)
       .post('/doctor_info')
+      .set(auth)
       .set('Content-Type', 'application/json')
       .set('Content-Encoding', 'gzip')
       .send(gzipSync('{"email": "e", "name": "n", "info": "i"}'));
@@ -294,15 +305,43 @@ describe('/doctor_info (E06): methods and routing', () => {
     expect(await patients()).toEqual([]);
   });
 
-  it('sets no cookies and creates no session', async () => {
+  it('sets no cookies and creates no session beyond the doctor login', async () => {
     const res = await post(JSON.stringify({ email: 'e', name: 'n', info: 'i' }));
     expect(res.headers['set-cookie']).toBeUndefined();
     expect(setCookies(res)).toEqual({});
-    expect((await query('SELECT count(*) AS n FROM sessions')).rows[0].n).toBe(0);
+    expect((await query('SELECT count(*) AS n FROM sessions')).rows[0].n).toBe(1);
   });
 
   it('E04 /doc_port/ and E05 /doc_info_page/ (dropped HTML pages) are 404', async () => {
     expect((await request(app).get('/doc_port/')).status).toBe(404);
     expect((await request(app).get('/doc_info_page/')).status).toBe(404);
+  });
+});
+
+describe('POST /doctor_info (E06): doctor login required', () => {
+  const body = JSON.stringify({ email: 'e@x.test', name: 'n', info: 'i' });
+
+  it('401 without a login, nothing written', async () => {
+    const c = await apiClient(app, null);
+    expect((await c.post('/doctor_info').type('json').send(body)).status).toBe(401);
+    expect(await patients()).toEqual([]);
+  });
+
+  it('403 for a logged-in patient, nothing written', async () => {
+    await createPatient({ email: 'asha@example.test' });
+    const c = await apiClient(app, 'asha@example.test');
+    expect((await c.post('/doctor_info').type('json').send(body)).status).toBe(403);
+    expect(await patients()).toHaveLength(1);
+  });
+
+  it('403 without the CSRF token, even when logged in', async () => {
+    const { Cookie } = auth;
+    const res = await request(app)
+      .post('/doctor_info')
+      .set('Cookie', Cookie)
+      .set('Content-Type', 'application/json')
+      .send(body);
+    expect(res.status).toBe(403);
+    expect(await patients()).toEqual([]);
   });
 });
