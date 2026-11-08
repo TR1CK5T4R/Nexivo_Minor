@@ -179,3 +179,31 @@ describe('assess: alerts feed the category', () => {
     expect(run(obs({ pain: 1 }))).toMatchObject({ alerts: [], category: 'normal' });
   });
 });
+
+describe('no overlapping alerts after a sudden deterioration', () => {
+  it('a parameter with SUDDEN_DETERIORATION gets no UNUSUAL_CHANGE / NO_IMPROVEMENT for the same check-in', () => {
+    // Pain 2 for five check-ins, then 5: sudden (+3), and without the rule also unusual (z = −6) and not improving.
+    const alerts = detect(series([2, 2, 2, 2, 2]), obs({ pain: 5 }));
+    expect(alerts.filter((a) => a.parameter === 'pain').map((a) => a.type)).toEqual(['SUDDEN_DETERIORATION']);
+  });
+
+  it('a severe symptom covers the symptom score; other parameters keep their own alerts', () => {
+    const history = series([2, 2, 2, 2, 2]);
+    const alerts = detect(history, obs({ pain: 4, symptoms: { fever: 3 } }));
+    expect(alerts.filter((a) => a.parameter?.startsWith('symptoms')).map((a) => a.type)).toEqual([
+      'SUDDEN_DETERIORATION',
+    ]);
+    // Pain +2 is not sudden, so its unusual-change and no-improvement alerts stay.
+    expect(
+      alerts
+        .filter((a) => a.parameter === 'pain')
+        .map((a) => a.type)
+        .sort(),
+    ).toEqual(['NO_IMPROVEMENT', 'UNUSUAL_CHANGE']);
+  });
+
+  it('a score drop (no parameter) does not suppress anything', () => {
+    const alerts = detect(series([2, 2, 2, 2, 2]), obs({ pain: 4 }), { baseline: 95, composite: 70 });
+    expect(alerts.map((a) => a.type).sort()).toEqual(['NO_IMPROVEMENT', 'SCORE_DROP', 'UNUSUAL_CHANGE']);
+  });
+});

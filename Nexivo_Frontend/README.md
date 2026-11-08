@@ -5,12 +5,16 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-pose_tracking-0097A7)
 
-The React app of **Nexivo**, a post-surgery rehabilitation assistant I built as a personal project. Doctors add patients with their medical notes. Patients log in, chat with an AI assistant that knows those notes (English or Hindi), and do exercises tracked by their webcam with a live rep counter. The API is the Node.js backend in [`../Nexivo_Backend`](../Nexivo_Backend).
+The React app of **Nexivo**, a post-operative recovery monitoring system I built as a personal project. Patients record daily check-ins and see a personalized recovery score with the reasons behind it; clinicians see every patient sorted by urgency; a research dashboard compares Nexivo with fixed thresholds. Patients can also chat with an AI assistant that knows their doctor's notes (English or Hindi) and do exercises tracked by their webcam with a live rep counter. The API is the Node.js backend in [`../Nexivo_Backend`](../Nexivo_Backend).
 
 > **About this project.** Nexivo is a student project, built and maintained by me, [Tushar Singla](#author), a final-year B.Tech IT student. It isn't a commercial product, and it isn't meant for real patients or real medical data.
 
 ## Features
 
+- **Daily check-in:** pain, mobility and fatigue sliders, a severity per symptom, medication doses and notes; the result shows the score, category, explanation, recommendation and any alerts.
+- **My Recovery / patient recovery view:** score card, "Why this status" factors, recommendation, score trend against the expected recovery curve, parameter charts (Recharts), alerts with acknowledge/resolve, milestone checklist and timeline.
+- **Recovery overview** for clinicians, most urgent first, and a **research dashboard** with CSV/JSON export.
+- Every Nexivo screen shows that Nexivo provides decision support and does not replace clinical judgement; categories always appear as text, never colour alone.
 - **AI recovery assistant:** a chat that answers in English or Hindi based on the patient's own medical notes, and shows how serious the message looked (the doctor is alerted automatically for serious ones).
 - **Camera-tracked exercises:** pose detection runs entirely in the browser with MediaPipe; the app counts reps, grades each one (excellent / good / partial) and warns about form problems such as uneven arms, shrugging or bent elbows. Video never leaves the device.
 - **Doctor tools:** add or update a patient's details and medical notes.
@@ -25,12 +29,15 @@ Open the app, choose **Patient**, and log in with one of these accounts. They ho
 | Demo Patient (Knee)     | `demo.knee@revivecare.test`     | `demo1234` | knee ACL reconstruction, 10 days ago |
 | Demo Patient (Hip)      | `demo.hip@revivecare.test`      | `demo1234` | hip replacement, 3 weeks ago         |
 | Demo Patient (Shoulder) | `demo.shoulder@revivecare.test` | `demo1234` | rotator cuff repair, 6 weeks ago     |
+| Demo Patient (Appendix) | `demo.appendix@revivecare.test` | `demo1234` | appendectomy, 4 days ago             |
+
+After the backend's `npm run db:demo`, each has a recovery history: Knee needs attention, Hip is slower than expected, Shoulder is normal, Appendix has only two check-ins.
 
 Patient login is **email only** in this version: the password field has to be filled in, but its value isn't checked. The doctor pages need no login; if you add a patient there, please use made-up details. The exercise pages ask for camera access.
 
 ## Tech stack
 
-React 19, Vite, React Router, Tailwind CSS, lucide-react icons, MediaPipe Tasks (`@mediapipe/tasks-vision`), Vitest.
+React 19, Vite, React Router, Tailwind CSS, lucide-react icons, Recharts, MediaPipe Tasks (`@mediapipe/tasks-vision`), Vitest.
 
 ## Getting started
 
@@ -49,37 +56,41 @@ Start the backend first (`npm run dev` in `../Nexivo_Backend`, port 3000). In de
 | `npm run build`   | Production build into `dist/`      |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint`    | ESLint                             |
-| `npm test`        | Unit tests for the exercise logic  |
+| `npm test`        | Unit tests                         |
 
 ## How it works
 
 All backend calls go through `src/services/djangoApi.js` (named after the backend the app was first written for; the Node.js backend keeps the same API). Every request sends the session cookie and the CSRF token.
 
-| Screen                              | Route                                         | Backend calls                                                                     |
-| ----------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
-| Landing page                        | `/`                                           | —                                                                                 |
-| Doctor: add a patient               | `/doctor/add-patient`                         | `POST /doctor_info`                                                               |
-| Patient login                       | `/patient/login`                              | `GET /csrf/`, `POST /login/`, then `GET /patient/dashboard/`                      |
-| Patient dashboard                   | `/patient/dashboard`                          | `GET /patient/dashboard/`                                                         |
-| Chat                                | `/patient/chat`                               | `POST /patient/chatbot/send/`                                                     |
-| Exercises                           | `/patient/exercises`, `/patient/exercise/:id` | demo videos from `/static/…`; finished sets saved with `POST /exercise/sessions/` |
-| Doctor dashboard, medical dashboard | `/doctor`, `/medical-dashboard`               | — (sample data)                                                                   |
+| Screen                              | Route                                         | Backend calls                                                                                                          |
+| ----------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Landing page                        | `/`                                           | —                                                                                                                      |
+| Doctor: add a patient               | `/doctor/add-patient`                         | `POST /doctor_info`                                                                                                    |
+| Patient login                       | `/patient/login`                              | `GET /csrf/`, `POST /login/`, then `GET /patient/dashboard/`                                                           |
+| Patient dashboard                   | `/patient/dashboard`                          | `GET /patient/dashboard/`                                                                                              |
+| Chat                                | `/patient/chat`                               | `POST /patient/chatbot/send/`                                                                                          |
+| Exercises                           | `/patient/exercises`, `/patient/exercise/:id` | demo videos from `/static/…`; finished sets saved with `POST /exercise/sessions/`                                      |
+| Doctor dashboard, medical dashboard | `/doctor`, `/medical-dashboard`               | — (sample data; links to the recovery overview and research dashboard)                                                 |
+| Daily check-in                      | `/patient/check-in`                           | `GET /api/config/scoring`, `GET`/`PUT /api/patients/:id/recovery-profile`, `POST /api/patients/:id/observations`       |
+| My Recovery / patient recovery      | `/patient/recovery`, `/doctor/patients/:id`   | `GET /api/patients/:id/…` (scores, timeline, alerts, milestones), `PATCH /api/alerts/:id`, `PATCH /api/milestones/:id` |
+| Recovery overview                   | `/doctor/overview`                            | `GET /api/clinician/overview`                                                                                          |
+| Research dashboard                  | `/research`                                   | `/api/research/datasets`, `/api/research/evaluations`                                                                  |
 
 - **Login state** lives in the backend's session cookie. `src/context/AuthContext.jsx` checks it on each page load by asking for the dashboard data.
 - **Exercise tracking:** `src/hooks/usePoseWorkout.js` opens the camera and runs MediaPipe's pose model on each video frame; `src/utils/exerciseLogic.js` turns the body landmarks into arm angles, reps, grades and warnings. The tracked arms are drawn over the mirrored video, and each finished set is saved to the backend. The rep logic is unit-tested against recorded movement data.
 
 ## Project structure
 
-| Path              | What's in it                                                   |
-| ----------------- | -------------------------------------------------------------- |
-| `src/pages/`      | One component per screen                                       |
-| `src/components/` | Shared UI pieces (cards, buttons, form fields, layout, navbar) |
-| `src/context/`    | Login state                                                    |
-| `src/hooks/`      | Data loading hooks and the camera / pose tracking hook         |
-| `src/services/`   | Every backend call                                             |
-| `src/utils/`      | Rep counting and form checks                                   |
-| `tests/`          | Unit tests and recorded movement data                          |
-| `public/`         | Static assets                                                  |
+| Path              | What's in it                                                        |
+| ----------------- | ------------------------------------------------------------------- |
+| `src/pages/`      | One component per screen                                            |
+| `src/components/` | Shared UI pieces (cards, buttons, form fields, layout, navbar)      |
+| `src/context/`    | Login state                                                         |
+| `src/hooks/`      | Data loading hooks and the camera / pose tracking hook              |
+| `src/services/`   | Every backend call                                                  |
+| `src/utils/`      | Rep counting and form checks; recovery and research display helpers |
+| `tests/`          | Unit tests and recorded movement data                               |
+| `public/`         | Static assets                                                       |
 
 ## Deployment
 

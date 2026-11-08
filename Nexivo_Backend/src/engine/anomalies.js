@@ -81,11 +81,16 @@ export function detectAnomalies(
   }
 
   const now = normalize(current, params);
+  // A parameter that just had a sudden deterioration gets no extra UNUSUAL_CHANGE / NO_IMPROVEMENT
+  // alert for the same check-in: they would repeat the same event at a lower severity.
+  // A severe symptom counts for the symptom score.
+  const sudden = new Set(alerts.filter((a) => a.type === 'SUDDEN_DETERIORATION').map((a) => a.parameter.split('.')[0]));
 
   // UNUSUAL_CHANGE: z ≤ −z_threshold against the previous window_k observations (needs all of them).
   if (history.length >= params.window_k) {
     const window = history.slice(-params.window_k).map((o) => normalize(o, params));
     for (const p of TREND_PARAMETERS) {
+      if (sudden.has(p)) continue;
       const values = window.map((n) => n[p] / 10);
       const m = mean(values);
       const sd = Math.sqrt(mean(values.map((v) => (v - m) ** 2)));
@@ -108,7 +113,7 @@ export function detectAnomalies(
   if (history.length >= w - 1 && current.day_post_op < expectedRecoveryDays) {
     const recent = [...history.slice(-(w - 1)), current].map((o) => ({ day: o.day_post_op, n: normalize(o, params) }));
     for (const p of TREND_PARAMETERS) {
-      if (now[p] >= 100) continue;
+      if (now[p] >= 100 || sudden.has(p)) continue;
       const s = slope(recent.map((r) => ({ x: r.day, y: r.n[p] / 10 })));
       if (s !== null && s <= 0) {
         add('NO_IMPROVEMENT', p, 'medium', `${LABELS[p]} has not improved over the last ${w} check-ins.`, {
