@@ -16,6 +16,7 @@ import ExerciseWorkout from './pages/ExerciseWorkout';
 import CheckInForm from './pages/CheckInForm';
 import PatientRecovery from './pages/PatientRecovery';
 import ClinicianOverview from './pages/ClinicianOverview';
+import ResearchDashboard from './pages/ResearchDashboard';
 
 /**
  * Main App Component
@@ -48,6 +49,7 @@ function App() {
           <Route path="/patient/recovery" element={<PatientRecovery />} />
           <Route path="/doctor/overview" element={<ClinicianOverview />} />
           <Route path="/doctor/patients/:id" element={<PatientRecovery />} />
+          <Route path="/research" element={<ResearchDashboard />} />
 
           {/* Chat Interface Route - Patient AI Assistant */}
           <Route path="/patient/chat" element={<ChatInterface />} />

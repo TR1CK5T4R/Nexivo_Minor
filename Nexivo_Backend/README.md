@@ -196,6 +196,11 @@ Nexivo recovery API (JSON, no trailing slash). "Patient or clinician": a logged-
 | `GET /api/clinician/overview`                | clinician (not a logged-in patient)              | Patients with a recovery profile: latest score, category, slope, open alerts, last check-in; most urgent first |
 | `GET /api/patients/:id/alerts`               | patient or clinician                             | Trend and anomaly alerts, newest activity first. Optional `?status=` (`open`, `acknowledged`, `resolved`)      |
 | `PATCH /api/alerts/:id`                      | patient or clinician                             | `{"status": "acknowledged"}` or `{"status": "resolved"}`; only forward (409 otherwise)                         |
+| `GET /api/research/datasets`                 | clinician (not a logged-in patient)              | Research datasets, newest first                                                                                |
+| `POST /api/research/datasets`                | clinician (not a logged-in patient)              | `{name, source: "synthetic", seed, patients}` or `{name, source: "csv", csv}` (strict CSV, up to 50,000 rows)  |
+| `GET /api/research/evaluations`              | clinician (not a logged-in patient)              | Evaluation runs with headline F1s                                                                              |
+| `POST /api/research/evaluations`             | clinician (not a logged-in patient)              | `{dataset_id, seed}`: replay baseline vs Nexivo, 30/70 patient split, store metrics                            |
+| `GET /api/research/evaluations/:id`          | clinician (not a logged-in patient)              | One run: split, metrics (test set, plus `tuning`), confusion matrices                                          |
 
 ## Performance
 

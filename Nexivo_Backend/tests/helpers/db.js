@@ -5,7 +5,7 @@ import { withTransaction } from '../../src/db/tx.js';
 
 export async function truncateAll() {
   await query(
-    'TRUNCATE users, doctors, patients, exercise_sessions, chat_messages, patient_reports, sessions RESTART IDENTITY CASCADE',
+    'TRUNCATE users, doctors, patients, exercise_sessions, chat_messages, patient_reports, sessions, research_datasets RESTART IDENTITY CASCADE',
   );
   // Back to the seeded scoring configs only (their scores were truncated with the patients above),
   // with nexivo-1.1 (0014: 1.0 plus the explanation templates) active.

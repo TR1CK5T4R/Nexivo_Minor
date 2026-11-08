@@ -212,6 +212,17 @@ export const recoveryAPI = {
     getOverview: () => apiCall('/api/clinician/overview'),
 };
 
+// ==================== Nexivo Research API ====================
+
+export const researchAPI = {
+    listDatasets: () => apiCall('/api/research/datasets'),
+    // {name, source: 'synthetic', seed, patients} or {name, source: 'csv', csv}
+    createDataset: (dataset) => unsafeCall('/api/research/datasets', 'POST', dataset),
+    listRuns: () => apiCall('/api/research/evaluations'),
+    runEvaluation: (datasetId, seed) => unsafeCall('/api/research/evaluations', 'POST', { dataset_id: datasetId, seed }),
+    getRun: (runId) => apiCall(`/api/research/evaluations/${runId}`),
+};
+
 // ==================== Combined Export ====================
 
 const djangoAPI = {

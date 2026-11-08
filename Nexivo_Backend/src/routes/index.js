@@ -12,6 +12,8 @@ import {
   alertPatch,
   alertsQuery,
   correctionBody,
+  datasetBody,
+  evaluationBody,
   idParams,
   milestoneBody,
   milestonePatch,
@@ -42,6 +44,8 @@ const rawBody = (req, res, next) => (req.headers['content-length'] === undefined
 // JSON for the new E23 endpoint (React sends application/json); a body that
 // isn't valid JSON gets the endpoint's own 400 answer.
 const parseJson = express.json({ limit: '10kb' });
+// Research dataset imports carry a CSV (up to ~8 MB of text) inside the JSON body.
+const parseLargeJson = express.json({ limit: '10mb' });
 const jsonBody = (onInvalid) => (req, res, next) =>
   parseJson(req, res, (err) => (err ? onInvalid(null, req, res) : next()));
 
@@ -125,9 +129,11 @@ function routeTable(deps) {
  * data; requests without a patient session are clinician requests, open like
  * POST /doctor_info because clinicians have no login yet.
  */
-function nexivoRoutes({ recovery, csrfProtect }) {
+function nexivoRoutes({ recovery, research, csrfProtect }) {
   const check = (schemas) => validate(schemas, { onInvalid: recovery.invalid });
   const json = jsonBody(recovery.invalid);
+  const largeJson = (req, res, next) =>
+    parseLargeJson(req, res, (err) => (err ? recovery.invalid(null, req, res) : next()));
   const params = idParams;
   return [
     { method: 'get', path: '/api/config/scoring', handlers: [recovery.getConfig], note: 'M5' },
@@ -222,6 +228,27 @@ function nexivoRoutes({ recovery, csrfProtect }) {
       path: '/api/milestones/:id',
       handlers: [csrfProtect, json, check({ params, body: milestonePatch }), recovery.patchMilestone],
       note: 'M1 (owner checked in the service)',
+    },
+    // ── Research (M6): clinician-only, never mixed with clinical data ──
+    { method: 'get', path: '/api/research/datasets', handlers: [notPatient, research.listDatasets], note: 'M6' },
+    {
+      method: 'post',
+      path: '/api/research/datasets',
+      handlers: [csrfProtect, notPatient, largeJson, check({ body: datasetBody }), research.createDataset],
+      note: 'M6',
+    },
+    { method: 'get', path: '/api/research/evaluations', handlers: [notPatient, research.listRuns], note: 'M6' },
+    {
+      method: 'post',
+      path: '/api/research/evaluations',
+      handlers: [csrfProtect, notPatient, json, check({ body: evaluationBody }), research.createRun],
+      note: 'M6',
+    },
+    {
+      method: 'get',
+      path: '/api/research/evaluations/:id',
+      handlers: [notPatient, check({ params }), research.getRun],
+      note: 'M6',
     },
   ];
 }

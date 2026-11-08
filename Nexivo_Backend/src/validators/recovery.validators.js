@@ -88,3 +88,27 @@ export const milestonePatch = z.object({ completed: z.boolean() });
 export const alertsQuery = z.object({ status: z.enum(['open', 'acknowledged', 'resolved']).optional() });
 
 export const alertPatch = z.object({ status: z.enum(['acknowledged', 'resolved']) });
+
+// ── Research (M6) ──
+
+const seed = z.number().int().min(0).max(2_147_483_647);
+
+export const datasetBody = z.discriminatedUnion('source', [
+  z.object({
+    source: z.literal('csv'),
+    name: z.string().trim().min(1).max(100),
+    csv: z.string().min(1).max(8_000_000),
+  }),
+  z.object({
+    source: z.literal('synthetic'),
+    name: z.string().trim().min(1).max(100),
+    seed,
+    patients: z.number().int().min(10).max(500).default(60),
+  }),
+]);
+
+export const evaluationBody = z.object({
+  dataset_id: z.number().int().positive(),
+  seed,
+  config_id: z.number().int().positive().optional(),
+});

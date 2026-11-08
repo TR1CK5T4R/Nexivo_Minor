@@ -3,6 +3,7 @@
 // it (M4). Pure.
 
 import { detectAnomalies } from './anomalies.js';
+import { evaluateBaseline } from './baselineRules.js';
 import { contributions, explain } from './explain.js';
 import { recommend } from './recommend.js';
 import { categorize, scoreObservation } from './score.js';
@@ -46,3 +47,18 @@ export function assess(history, current, params, { expectedRecoveryDays, milesto
     recommendation: recommend(category, factors, alerts, params),
   };
 }
+
+/**
+ * The common engine interface for the M6 evaluation: evaluate(history, current, params) → { category, flagged }.
+ * flagged = the positive class (Requires attention). Expected recovery days default to the config's.
+ */
+export const engines = {
+  baseline: (history, current, params) => {
+    const { category, flagged } = evaluateBaseline(history, current, params);
+    return { category, flagged };
+  },
+  nexivo: (history, current, params, { expectedRecoveryDays = params.default_expected_recovery_days } = {}) => {
+    const { category } = assess(history, current, params, { expectedRecoveryDays });
+    return { category, flagged: category === 'attention' };
+  },
+};

@@ -15,6 +15,7 @@ import { createExerciseController } from './controllers/exercise.controller.js';
 import { createHomeController } from './controllers/home.controller.js';
 import { createPatientController } from './controllers/patient.controller.js';
 import { createRecoveryController } from './controllers/recovery.controller.js';
+import { createResearchController } from './controllers/research.controller.js';
 import { health } from './controllers/health.controller.js';
 import { allowedHosts } from './middleware/allowedHosts.js';
 import { corsLikeDjango } from './middleware/cors.js';
@@ -116,6 +117,7 @@ export function createApp({ config, logger }) {
     chat: createChatController({ groq: config.groq, alerts: config.alerts }),
     patient: createPatientController(),
     recovery: createRecoveryController(),
+    research: createResearchController(),
     health,
     csrfProtect: csrf.csrfProtect,
     loginLimiter: loginRateLimit(config.loginRateLimit),

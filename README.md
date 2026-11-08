@@ -22,6 +22,12 @@ Log in as a patient with one of these demo accounts (made-up data; any password 
 | `demo.hip@revivecare.test`      | `demo1234` |
 | `demo.shoulder@revivecare.test` | `demo1234` |
 
+## Research evaluation
+
+The research dashboard (`/research`, linked from the doctor dashboard) compares a fixed-threshold baseline, ReviveCare's rule evaluator with the same thresholds for every patient, against Nexivo's personalized scoring. It replays each patient's check-ins in order without look-ahead and reports accuracy, precision, recall, F1-score and false positives on a held-out 70% of patients.
+
+> Results on synthetic data validate the pipeline and illustrate how the engines behave. They are not clinical evidence. Clinical claims require validated datasets and ethical approval (future scope).
+
 ## Repository layout
 
 | Folder                                        | What it is                                                                                   |

@@ -265,16 +265,21 @@ describe('scoreObservation', () => {
 });
 
 describe('src/engine is pure', () => {
-  it('imports only other engine modules (no database, HTTP or config loading)', async () => {
+  // The one exception: the M6 baseline calls ReviveCare's rule evaluator unchanged, itself pure.
+  const ALLOWED = '../services/riskEngine.js';
+  const importsOf = (source) => [...source.matchAll(/\bfrom '([^']+)'/g)].map((m) => m[1]);
+
+  it("imports only other engine modules and ReviveCare's rule evaluator (no database, HTTP)", async () => {
     const { readdirSync } = await import('node:fs');
     const dir = new URL('../../src/engine/', import.meta.url);
     for (const file of readdirSync(dir)) {
-      const source = readFileSync(new URL(file, dir), 'utf8');
-      const imports = [...source.matchAll(/^import .* from '([^']+)';$/gm)].map((m) => m[1]);
+      const imports = importsOf(readFileSync(new URL(file, dir), 'utf8'));
       expect(
-        imports.filter((p) => !p.startsWith('./')),
+        imports.filter((p) => !p.startsWith('./') && p !== ALLOWED),
         file,
       ).toEqual([]);
     }
+    const riskEngine = importsOf(readFileSync(new URL(ALLOWED, dir), 'utf8'));
+    expect(riskEngine.filter((p) => /db|pool|express|http|integrations|repositories/.test(p))).toEqual([]);
   });
 });

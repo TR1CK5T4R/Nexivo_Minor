@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Users, Bell, TrendingUp, FileText, UserPlus, ClipboardList, Calendar, Activity, Pill, Phone, Video } from 'lucide-react';
+import { FlaskConical, Users, Bell, TrendingUp, FileText, UserPlus, ClipboardList, Calendar, Activity, Pill, Phone, Video } from 'lucide-react';
 import { Navbar, WelcomeSection, StatCard, ActionCard, Card, Button } from '../components';
 
 export default function DoctorDashboard() {
@@ -92,6 +92,13 @@ export default function DoctorDashboard() {
                             description="Patients sorted by recovery status, with scores, trends and alerts"
                             color="blue"
                             onClick={() => navigate('/doctor/overview')}
+                        />
+                        <ActionCard
+                            icon={FlaskConical}
+                            title="Research Evaluation"
+                            description="Compare the fixed-threshold baseline with Nexivo on synthetic data"
+                            color="purple"
+                            onClick={() => navigate('/research')}
                         />
                     </div>
                 </div>
