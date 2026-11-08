@@ -37,6 +37,19 @@ export function ownPatientOnly(req, res, next) {
 }
 
 /**
+ * Nexivo clinician-only routes (overview, new config versions, research): a
+ * logged-in patient gets 403, since these show or change data beyond their own.
+ * Without a patient session the request passes (clinicians have no login yet).
+ *
+ * @type {import('express').RequestHandler}
+ */
+export function notPatient(req, res, next) {
+  res.vary('Cookie');
+  if (sessionPatientId(req) !== null) return sendJson(res, 403, { error: 'Forbidden' });
+  next();
+}
+
+/**
  * Let the request through only if the session has a patient_id.
  * Either way the session was read, so the response varies by cookie (Django's
  * SessionMiddleware adds `Vary: Cookie`). When there's no patient, a dead

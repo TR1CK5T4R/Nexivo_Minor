@@ -8,13 +8,16 @@ import {
   createConfig,
   getActiveConfig,
   getLatestScore,
+  getOverview,
   getProfile,
   listAlerts,
   listMilestones,
+  listScores,
   saveProfile,
   setMilestoneDone,
   updateAlertStatus,
 } from '../services/recovery.service.js';
+import { getTimeline } from '../services/timeline.service.js';
 import { sendJson } from '../utils/djangoResponses.js';
 import { fieldErrors } from '../validators/exercise.validators.js';
 
@@ -87,6 +90,18 @@ export function createRecoveryController() {
 
     async latestScore(req, res) {
       sendJson(res, 200, await getLatestScore(req.validated.params.id));
+    },
+
+    async listScores(req, res) {
+      sendJson(res, 200, await listScores(req.validated.params.id, req.validated.query));
+    },
+
+    async timeline(req, res) {
+      sendJson(res, 200, await getTimeline(req.validated.params.id, req.validated.query));
+    },
+
+    async overview(req, res) {
+      sendJson(res, 200, await getOverview());
     },
 
     async listAlerts(req, res) {

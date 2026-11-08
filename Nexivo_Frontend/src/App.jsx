@@ -14,6 +14,8 @@ import ChatInterface from './pages/ChatInterface';
 import ExerciseSelection from './pages/ExerciseSelection';
 import ExerciseWorkout from './pages/ExerciseWorkout';
 import CheckInForm from './pages/CheckInForm';
+import PatientRecovery from './pages/PatientRecovery';
+import ClinicianOverview from './pages/ClinicianOverview';
 
 /**
  * Main App Component
@@ -41,8 +43,11 @@ function App() {
           <Route path="/patient/exercises" element={<ExerciseSelection />} />
           <Route path="/patient/exercise/:exerciseId" element={<ExerciseWorkout />} />
 
-          {/* Nexivo daily check-in */}
+          {/* Nexivo recovery monitoring */}
           <Route path="/patient/check-in" element={<CheckInForm />} />
+          <Route path="/patient/recovery" element={<PatientRecovery />} />
+          <Route path="/doctor/overview" element={<ClinicianOverview />} />
+          <Route path="/doctor/patients/:id" element={<PatientRecovery />} />
 
           {/* Chat Interface Route - Patient AI Assistant */}
           <Route path="/patient/chat" element={<ChatInterface />} />

@@ -201,6 +201,15 @@ export const recoveryAPI = {
     saveProfile: (patientId, profile) => unsafeCall(`/api/patients/${patientId}/recovery-profile`, 'PUT', profile),
     // Returns {observation, score, alerts}.
     createObservation: (patientId, checkIn) => unsafeCall(`/api/patients/${patientId}/observations`, 'POST', checkIn),
+    getLatestScore: (patientId) => apiCall(`/api/patients/${patientId}/scores/latest`),
+    listScores: (patientId) => apiCall(`/api/patients/${patientId}/scores`),
+    getTimeline: (patientId) => apiCall(`/api/patients/${patientId}/timeline`),
+    listAlerts: (patientId) => apiCall(`/api/patients/${patientId}/alerts`),
+    setAlertStatus: (alertId, status) => unsafeCall(`/api/alerts/${alertId}`, 'PATCH', { status }),
+    listMilestones: (patientId) => apiCall(`/api/patients/${patientId}/milestones`),
+    setMilestoneCompleted: (milestoneId, completed) =>
+        unsafeCall(`/api/milestones/${milestoneId}`, 'PATCH', { completed }),
+    getOverview: () => apiCall('/api/clinician/overview'),
 };
 
 // ==================== Combined Export ====================

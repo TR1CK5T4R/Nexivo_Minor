@@ -4,7 +4,7 @@
 // middleware/notFound.js, so nothing has to be listed twice.
 
 import express from 'express';
-import { ownPatientOnly, requirePatient } from '../middleware/auth.js';
+import { notPatient, ownPatientOnly, requirePatient } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { exerciseSessionSchema } from '../validators/exercise.validators.js';
 import { configBody } from '../config/scoringConfig.js';
@@ -131,11 +131,11 @@ function nexivoRoutes({ recovery, csrfProtect }) {
   const params = idParams;
   return [
     { method: 'get', path: '/api/config/scoring', handlers: [recovery.getConfig], note: 'M5' },
-    // Admin only in the spec; open until admins can log in (D2).
+    // Admin only in the spec; open until admins can log in (D2), but never to a logged-in patient.
     {
       method: 'post',
       path: '/api/config/scoring',
-      handlers: [csrfProtect, json, check({ body: configBody }), recovery.createConfig],
+      handlers: [csrfProtect, notPatient, json, check({ body: configBody }), recovery.createConfig],
       note: 'M2/M5',
     },
     {
@@ -192,6 +192,19 @@ function nexivoRoutes({ recovery, csrfProtect }) {
       handlers: [check({ params }), ownPatientOnly, recovery.latestScore],
       note: 'M4/M5',
     },
+    {
+      method: 'get',
+      path: '/api/patients/:id/scores',
+      handlers: [check({ params, query: rangeQuery }), ownPatientOnly, recovery.listScores],
+      note: 'M5',
+    },
+    {
+      method: 'get',
+      path: '/api/patients/:id/timeline',
+      handlers: [check({ params, query: rangeQuery }), ownPatientOnly, recovery.timeline],
+      note: 'M5',
+    },
+    { method: 'get', path: '/api/clinician/overview', handlers: [notPatient, recovery.overview], note: 'M5' },
     {
       method: 'get',
       path: '/api/patients/:id/alerts',

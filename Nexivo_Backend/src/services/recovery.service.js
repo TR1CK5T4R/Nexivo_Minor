@@ -19,6 +19,8 @@ import {
   insertMilestones,
   listAlerts as listAlertRows,
   listMilestones as listMilestoneRows,
+  listOverview,
+  listScoreHistory,
   lockPatient,
   setAlertStatus,
   setMilestoneCompleted,
@@ -152,4 +154,15 @@ export async function getLatestScore(patientId) {
   const score = await findLatestScore(patientId);
   if (!score) throw notFound('Score');
   return score;
+}
+
+/** Score history (one per check-in, oldest first) for the trend charts. */
+export async function listScores(patientId, range) {
+  await assertPatient(patientId);
+  return listScoreHistory(patientId, range);
+}
+
+/** Clinician overview: every patient with a recovery profile, most urgent first. */
+export async function getOverview() {
+  return listOverview();
 }

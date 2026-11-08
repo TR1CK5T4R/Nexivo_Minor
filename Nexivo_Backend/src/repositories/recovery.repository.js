@@ -359,3 +359,62 @@ export async function findLatestScore(patientId, client) {
   );
   return rows[0] ?? null;
 }
+
+/**
+ * One score per check-in (latest versions; the active config's row when there
+ * are several), oldest first, for the trend charts. from/to are inclusive ISO timestamps or null.
+ */
+export async function listScoreHistory(patientId, { from = null, to = null } = {}, client) {
+  const { rows } = await query(
+    `SELECT DISTINCT ON (o.id)
+            s.id, s.observation_id, s.config_id, s.composite, s.baseline, s.slope, s.expected, s.category,
+            s.limited_history, s.contributions, s.explanation, s.recommendation,
+            to_json(o.observed_at) AS observed_at, o.day_post_op
+       FROM recovery_scores s
+       JOIN recovery_observations o ON o.id = s.observation_id
+       JOIN scoring_configs c ON c.id = s.config_id
+      WHERE s.patient_id = $1
+        AND NOT EXISTS (SELECT 1 FROM recovery_observations n WHERE n.corrects_observation_id = o.id)
+        AND ($2::timestamptz IS NULL OR o.observed_at >= $2)
+        AND ($3::timestamptz IS NULL OR o.observed_at <= $3)
+      ORDER BY o.id, c.active DESC, s.computed_at DESC`,
+    [patientId, from, to],
+    client,
+  );
+  // DISTINCT ON fixes the SQL order, so put the rows in time order here.
+  return rows.sort(
+    (a, b) => Date.parse(a.observed_at) - Date.parse(b.observed_at) || a.observation_id - b.observation_id,
+  );
+}
+
+/**
+ * Every patient with a recovery profile: latest score, trend, open alerts and
+ * last check-in, most urgent first (Requires attention, Slower than expected,
+ * Normal, no check-ins yet; then more open alerts, then lower score).
+ */
+export async function listOverview(client) {
+  const { rows } = await query(
+    `SELECT p.id AS patient_id, u.name, rp.surgery_type, rp.surgery_date, rp.expected_recovery_days,
+            ls.composite, ls.category, ls.slope, ls.limited_history, ls.day_post_op,
+            to_json(ls.observed_at) AS last_check_in,
+            (SELECT count(*)::int FROM recovery_alerts a WHERE a.patient_id = p.id AND a.status = 'open') AS open_alerts
+       FROM recovery_profiles rp
+       JOIN patients p ON p.id = rp.patient_id
+       JOIN users u ON u.id = p.user_id
+       LEFT JOIN LATERAL (
+         SELECT s.composite, s.category, s.slope, s.limited_history, o.day_post_op, o.observed_at
+           FROM recovery_scores s
+           JOIN recovery_observations o ON o.id = s.observation_id
+           JOIN scoring_configs c ON c.id = s.config_id
+          WHERE s.patient_id = p.id
+            AND NOT EXISTS (SELECT 1 FROM recovery_observations n WHERE n.corrects_observation_id = o.id)
+          ORDER BY o.observed_at DESC, o.id DESC, c.active DESC, s.computed_at DESC
+          LIMIT 1
+       ) ls ON true
+      ORDER BY CASE ls.category WHEN 'attention' THEN 0 WHEN 'slower' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,
+               open_alerts DESC, ls.composite ASC NULLS LAST, p.id`,
+    [],
+    client,
+  );
+  return rows;
+}

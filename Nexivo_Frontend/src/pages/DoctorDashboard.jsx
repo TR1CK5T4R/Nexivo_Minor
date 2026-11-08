@@ -88,10 +88,10 @@ export default function DoctorDashboard() {
                         />
                         <ActionCard
                             icon={ClipboardList}
-                            title="View Reports"
-                            description="Access patient recovery reports and analytics"
+                            title="Recovery Overview"
+                            description="Patients sorted by recovery status, with scores, trends and alerts"
                             color="blue"
-                            onClick={() => console.log('View Reports - Coming soon')}
+                            onClick={() => navigate('/doctor/overview')}
                         />
                     </div>
                 </div>

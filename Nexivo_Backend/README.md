@@ -178,21 +178,24 @@ npm run lint && npm run format:check
 | `GET /static/Patients/videos/*` | anyone  | Exercise demo videos                                                                   |
 | `GET /api/health`               | anyone  | Health check (database included)                                                       |
 
-Nexivo recovery API (JSON, no trailing slash). "Patient or clinician": a logged-in patient reaches only their own `:id` (403 otherwise); a request without a patient session counts as a clinician. Unsafe methods need the CSRF header. Errors: `400 {"error": "Invalid request", "fields": {...}}`, or `403/404/409 {"error": "..."}`.
+Nexivo recovery API (JSON, no trailing slash). "Patient or clinician": a logged-in patient reaches only their own `:id` (403 otherwise); a request without a patient session counts as a clinician. Clinician-only routes answer 403 to a logged-in patient. Unsafe methods need the CSRF header. Errors: `400 {"error": "Invalid request", "fields": {...}}`, or `403/404/409 {"error": "..."}`.
 
-| Method and path                              | Who                  | What                                                                                                      |
-| -------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------- |
-| `GET /api/config/scoring`                    | anyone               | Active scoring config `{id, version, params}`                                                             |
-| `POST /api/config/scoring`                   | anyone (admin later) | New config `{version, params}`: validated (weights sum to 1), activated. Then run `npm run db:recompute`  |
-| `GET/PUT /api/patients/:id/recovery-profile` | patient or clinician | Surgery details. First PUT also creates the milestone plan from config templates                          |
-| `GET /api/patients/:id/observations`         | patient or clinician | Check-ins, latest versions only, oldest first. Optional `?from=&to=` (ISO times)                          |
-| `POST /api/patients/:id/observations`        | patient or clinician | New check-in → `{observation, score, alerts}`; scored and checked for alerts in the same transaction      |
-| `POST /api/observations/:id/corrections`     | patient or clinician | Correct a check-in: inserts a new version (any subset of fields)                                          |
-| `GET/POST /api/patients/:id/milestones`      | patient or clinician | List or add milestones                                                                                    |
-| `PATCH /api/milestones/:id`                  | patient or clinician | `{completed: true/false}`                                                                                 |
-| `GET /api/patients/:id/scores/latest`        | patient or clinician | Current score: category, factors (`contributions`), `explanation`, `recommendation`, `config_version`     |
-| `GET /api/patients/:id/alerts`               | patient or clinician | Trend and anomaly alerts, newest activity first. Optional `?status=` (`open`, `acknowledged`, `resolved`) |
-| `PATCH /api/alerts/:id`                      | patient or clinician | `{"status": "acknowledged"}` or `{"status": "resolved"}`; only forward (409 otherwise)                    |
+| Method and path                              | Who                                              | What                                                                                                           |
+| -------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `GET /api/config/scoring`                    | anyone                                           | Active scoring config `{id, version, params}`                                                                  |
+| `POST /api/config/scoring`                   | clinician (not a logged-in patient; admin later) | New config `{version, params}`: validated (weights sum to 1), activated. Then run `npm run db:recompute`       |
+| `GET/PUT /api/patients/:id/recovery-profile` | patient or clinician                             | Surgery details. First PUT also creates the milestone plan from config templates                               |
+| `GET /api/patients/:id/observations`         | patient or clinician                             | Check-ins, latest versions only, oldest first. Optional `?from=&to=` (ISO times)                               |
+| `POST /api/patients/:id/observations`        | patient or clinician                             | New check-in → `{observation, score, alerts}`; scored and checked for alerts in the same transaction           |
+| `POST /api/observations/:id/corrections`     | patient or clinician                             | Correct a check-in: inserts a new version (any subset of fields)                                               |
+| `GET/POST /api/patients/:id/milestones`      | patient or clinician                             | List or add milestones                                                                                         |
+| `PATCH /api/milestones/:id`                  | patient or clinician                             | `{completed: true/false}`                                                                                      |
+| `GET /api/patients/:id/scores/latest`        | patient or clinician                             | Current score: category, factors (`contributions`), `explanation`, `recommendation`, `config_version`          |
+| `GET /api/patients/:id/scores`               | patient or clinician                             | Score history, one per check-in, oldest first (with `expected` and factors). Optional `?from=&to=`             |
+| `GET /api/patients/:id/timeline`             | patient or clinician                             | Check-ins (with scores), alerts and milestone events in time order. Optional `?from=&to=`                      |
+| `GET /api/clinician/overview`                | clinician (not a logged-in patient)              | Patients with a recovery profile: latest score, category, slope, open alerts, last check-in; most urgent first |
+| `GET /api/patients/:id/alerts`               | patient or clinician                             | Trend and anomaly alerts, newest activity first. Optional `?status=` (`open`, `acknowledged`, `resolved`)      |
+| `PATCH /api/alerts/:id`                      | patient or clinician                             | `{"status": "acknowledged"}` or `{"status": "resolved"}`; only forward (409 otherwise)                         |
 
 ## Performance
 
