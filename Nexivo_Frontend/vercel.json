@@ -1,0 +1,41 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://nexivobackend.vercel.app/api/:path*"
+    },
+    {
+      "source": "/csrf/",
+      "destination": "https://nexivobackend.vercel.app/csrf/"
+    },
+    {
+      "source": "/login/",
+      "destination": "https://nexivobackend.vercel.app/login/"
+    },
+    {
+      "source": "/patient/dashboard/",
+      "destination": "https://nexivobackend.vercel.app/patient/dashboard/"
+    },
+    {
+      "source": "/patient/logout/",
+      "destination": "https://nexivobackend.vercel.app/patient/logout/"
+    },
+    {
+      "source": "/patient/chatbot/send/",
+      "destination": "https://nexivobackend.vercel.app/patient/chatbot/send/"
+    },
+    {
+      "source": "/doctor_info",
+      "destination": "https://nexivobackend.vercel.app/doctor_info"
+    },
+    {
+      "source": "/exercise/sessions/",
+      "destination": "https://nexivobackend.vercel.app/exercise/sessions/"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
