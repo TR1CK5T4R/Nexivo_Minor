@@ -12,13 +12,22 @@ import path from 'node:path';
  * Every servable file path below `root` ('/Patients/videos/bc.mp4'), scanned
  * once at startup like WhiteNoise without autorefresh (its production
  * default). Dot-files are skipped, as Django's collectstatic ignores them.
+ * A missing folder means no files.
  *
  * @param {string} root folder on disk
  * @returns {Set<string>}
  */
 function listFiles(root) {
   const paths = new Set();
-  for (const entry of readdirSync(root, { recursive: true, withFileTypes: true })) {
+  let entries;
+  try {
+    entries = readdirSync(root, { recursive: true, withFileTypes: true });
+  } catch (err) {
+    // On Vercel the folder isn't deployed (the frontend serves the videos), so /static/ is all 404.
+    if (err.code === 'ENOENT') return paths;
+    throw err;
+  }
+  for (const entry of entries) {
     if (!entry.isFile()) continue;
     const relative = path.relative(root, path.join(entry.parentPath, entry.name)).split(path.sep);
     if (relative.some((part) => part.startsWith('.'))) continue;

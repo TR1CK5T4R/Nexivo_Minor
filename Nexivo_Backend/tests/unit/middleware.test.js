@@ -9,6 +9,7 @@ import { validate } from '../../src/middleware/validate.js';
 import { errorPage } from '../../src/utils/djangoResponses.js';
 import { AppError } from '../../src/utils/httpErrors.js';
 import { createLogger } from '../../src/utils/logger.js';
+import { staticFiles } from '../../src/middleware/staticFiles.js';
 
 const logger = createLogger({ level: 'silent', pretty: false });
 
@@ -156,4 +157,13 @@ describe('allowedHosts (Django ALLOWED_HOSTS)', () => {
       expect(res.text).toContain('<h1>Bad Request (400)</h1>');
     },
   );
+});
+
+describe('staticFiles', () => {
+  it('starts without the folder (as on Vercel) and answers 404 for everything', async () => {
+    const app = express();
+    app.use('/static', staticFiles({ root: '/nonexistent/nexivo-static' }));
+    app.use((req, res) => res.status(404).end());
+    expect((await request(app).get('/static/Patients/videos/bc.mp4')).status).toBe(404);
+  });
 });
