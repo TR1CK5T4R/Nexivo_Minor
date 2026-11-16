@@ -111,7 +111,7 @@ export function createApp({ config, logger }) {
   const { router, routePaths } = createRouter({
     sessionCookieName: config.session.cookieName,
     home: createHomeController({ csrf }),
-    auth: createAuthController({ sessionCookieName: config.session.cookieName }),
+    auth: createAuthController({ sessionCookieName: config.session.cookieName, guestLogin: config.guestLogin }),
     doctor: createDoctorController(),
     exercise: createExerciseController(),
     chat: createChatController({ groq: config.groq, alerts: config.alerts }),

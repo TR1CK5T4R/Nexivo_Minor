@@ -20,7 +20,7 @@ import { hasObservations } from '../src/repositories/recovery.repository.js';
 import { upsertPatient } from '../src/services/doctor.service.js';
 import { createObservation } from '../src/services/observation.service.js';
 import { saveProfile } from '../src/services/recovery.service.js';
-import { makePassword } from '../src/utils/djangoPassword.js';
+import { makePassword, makeSalt } from '../src/utils/djangoPassword.js';
 import { resolveDatabase } from './lib/target.js';
 
 // Check-in rows: [day after surgery, pain, mobility, fatigue, symptoms, doses taken, doses prescribed].
@@ -31,6 +31,28 @@ const DEMO_PATIENTS = [
     email: 'demo.knee@revivecare.test',
     info: 'Demo account with made-up data. Left knee ACL reconstruction 10 days ago. Mild swelling, walking with crutches, paracetamol 500 mg as needed. Physiotherapy: straight-leg raises and side lateral raises daily.',
     // Improves for a week, then pain, swelling and wound redness come back.
+    recovery: {
+      surgeryType: 'Knee ACL reconstruction',
+      surgeryDaysAgo: 10,
+      milestonesDone: [7],
+      checkIns: [
+        [1, 7, 3, 6, { swelling: 1 }, 3, 3],
+        [2, 6, 4, 6, { swelling: 1 }, 3, 3],
+        [3, 5, 4, 5, {}, 3, 3],
+        [4, 5, 5, 5, {}, 3, 3],
+        [5, 4, 5, 4, {}, 3, 3],
+        [6, 3, 6, 4, {}, 3, 3],
+        [7, 3, 6, 3, {}, 3, 3],
+        [8, 5, 5, 5, { swelling: 2, wound_redness: 1 }, 3, 3],
+        [9, 7, 4, 6, { fever: 2, wound_redness: 3, swelling: 2 }, 2, 3],
+      ],
+    },
+  },
+  {
+    name: 'Guest Patient',
+    email: 'guest.patient@revivecare.test',
+    info: 'Guest account with made-up data, for trying Nexivo. Right knee ACL reconstruction 10 days ago. Walking with crutches, paracetamol 500 mg as needed.',
+    // The Knee story (better, then worse), so guests see alerts without changing the demo patient's history.
     recovery: {
       surgeryType: 'Knee ACL reconstruction',
       surgeryDaysAgo: 10,
@@ -115,6 +137,14 @@ const DEMO_PATIENTS = [
   },
 ];
 
+// "Continue as guest" logs in as this doctor (GUEST_LOGIN). Its password is unusable, so no password logs in as it.
+const GUEST_DOCTOR = {
+  name: 'Guest Doctor',
+  email: 'guest.doctor@revivecare.test',
+  specialty: 'Orthopaedics',
+  licenseNumber: 'GUEST-0001',
+};
+
 const DEMO_DOCTOR = {
   name: 'Demo Doctor',
   email: 'demo.doctor@revivecare.test',
@@ -124,6 +154,11 @@ const DEMO_DOCTOR = {
 
 const DAY_MS = 86_400_000;
 const addDays = (date, days) => new Date(Date.parse(date) + days * DAY_MS).toISOString().slice(0, 10);
+
+async function seedGuestDoctor() {
+  await upsertDoctor({ ...GUEST_DOCTOR, passwordHash: `!${makeSalt()}` });
+  console.log(`updated  ${GUEST_DOCTOR.email}: guest login only`);
+}
 
 async function seedDoctor() {
   const password = process.env.DEMO_DOCTOR_PASSWORD || (process.env.NODE_ENV === 'production' ? null : 'demo1234');
@@ -167,6 +202,7 @@ const target = resolveDatabase('DATABASE_URL');
 initPool({ connectionString: target.url, applicationName: 'revivecare-demo-accounts' });
 try {
   await seedDoctor();
+  await seedGuestDoctor();
   for (const { recovery, ...patient } of DEMO_PATIENTS) {
     const { created, patientId } = await upsertPatient(patient);
     console.log(`${created ? 'created ' : 'updated '} ${patient.email}: ${await seedRecovery(patientId, recovery)}`);

@@ -14,6 +14,7 @@ import {
   correctionBody,
   datasetBody,
   doctorLoginBody,
+  guestLoginBody,
   evaluationBody,
   idParams,
   milestoneBody,
@@ -155,6 +156,12 @@ function nexivoRoutes({ auth, recovery, research, csrfProtect, doctorLoginLimite
       note: 'doctor login',
     },
     { method: 'post', path: '/api/doctor/logout', handlers: [csrfProtect, auth.doctorLogout], note: 'doctor login' },
+    {
+      method: 'post',
+      path: '/api/guest/login',
+      handlers: [csrfProtect, json, check({ body: guestLoginBody }), auth.guestLogin],
+      note: 'guest login (GUEST_LOGIN)',
+    },
     { method: 'get', path: '/api/doctor/me', handlers: [auth.doctorMe], note: 'doctor login' },
     { method: 'get', path: '/api/config/scoring', handlers: [recovery.getConfig], note: 'M5' },
     // Admin only in the spec; there is no admin role, so any doctor.

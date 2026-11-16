@@ -63,6 +63,9 @@ const schema = z.object({
   CHAT_RATE_LIMIT_MAX: integerString(20, { min: 1 }),
   CHAT_RATE_LIMIT_WINDOW_MS: integerString(60 * 1000, { min: 1000 }),
 
+  // "Continue as guest" on the login pages: logs in as the guest accounts npm run db:demo creates.
+  GUEST_LOGIN: z.enum(['true', 'false']).default('false'),
+
   // Chat (E11). GROQ_BASE_URL points the SDK at a local mock server in parity
   // runs (Django side: GROQ_API_BASE, read by langchain_groq). Unset = Groq's API.
   GROQ_API_KEY: z.string().optional(),
@@ -184,6 +187,7 @@ export function loadConfig(source) {
     allowedHosts: e.ALLOWED_HOSTS,
     loginRateLimit: { max: e.LOGIN_RATE_LIMIT_MAX, windowMs: e.LOGIN_RATE_LIMIT_WINDOW_MS },
     chatRateLimit: { max: e.CHAT_RATE_LIMIT_MAX, windowMs: e.CHAT_RATE_LIMIT_WINDOW_MS },
+    guestLogin: e.GUEST_LOGIN === 'true',
     groq: { apiKey: e.GROQ_API_KEY, baseURL: e.GROQ_BASE_URL },
     alerts: alertSettings(source),
   });

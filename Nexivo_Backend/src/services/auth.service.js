@@ -31,6 +31,24 @@ export async function findLoginPatient(email) {
   return findPatientByEmail(email);
 }
 
+// Created by npm run db:demo. The guest doctor's password is unusable, so only guest login reaches it.
+export const GUEST_ACCOUNTS = Object.freeze({
+  doctor: 'guest.doctor@revivecare.test',
+  patient: 'guest.patient@revivecare.test',
+});
+
+/**
+ * The guest account for a role, or null if it doesn't exist (db:demo not run) or is deactivated.
+ *
+ * @param {'doctor' | 'patient'} role
+ * @returns {Promise<{ id: number, name: string, email: string } | null>}
+ */
+export async function findGuest(role) {
+  if (role === 'patient') return findPatientByEmail(GUEST_ACCOUNTS.patient);
+  const doctor = await findDoctorByEmail(GUEST_ACCOUNTS.doctor);
+  return doctor?.is_active ? { id: doctor.id, name: doctor.name, email: doctor.email } : null;
+}
+
 /**
  * The doctor these credentials log in as, or null. verifyPassword spends a real
  * hash's time even without an account, so timing doesn't reveal which emails exist.

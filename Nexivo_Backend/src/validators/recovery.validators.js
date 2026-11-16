@@ -27,6 +27,8 @@ export const doctorLoginBody = z.object({
   password: z.string().min(1).max(256),
 });
 
+export const guestLoginBody = z.object({ role: z.enum(['doctor', 'patient']) });
+
 export const rangeQuery = z.object({ from: timestamp.optional(), to: timestamp.optional() });
 
 export const profileBody = z.object({

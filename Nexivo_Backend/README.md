@@ -31,6 +31,8 @@ Log in on the patient login page with one of these accounts, or on the doctor lo
 
 Doctor login: `demo.doctor@revivecare.test`, password `demo1234`. Please use made-up details if you add a patient.
 
+Guests: with `GUEST_LOGIN=true`, both login pages show **Continue as guest**, which logs in as `guest.doctor@revivecare.test` or `guest.patient@revivecare.test` without a password. The guest doctor's password is unusable, so only the guest button reaches it. The guest patient has its own recovery history, so guests don't change the demo patients.
+
 Patient login is **email only** in this version: the password field has to be filled in, but its value isn't checked. Doctor passwords are checked. To create or reset these accounts on a database, run `npm run db:demo`. In production the demo doctor is only created when `DEMO_DOCTOR_PASSWORD` is set, because the default password is public. It also gives each one a recovery history (surgery profile, milestones, check-ins) ending in a different category: Knee → Requires attention, Hip → Slower than expected, Shoulder → Normal, Appendix → limited history. A patient who already has check-ins is left alone.
 
 ## Tech stack
@@ -184,7 +186,7 @@ npm run lint && npm run format:check
 | `GET /static/Patients/videos/*` | anyone  | Exercise demo videos                                                                   |
 | `GET /api/health`               | anyone  | Health check (database included)                                                       |
 
-Doctor login (JSON, CSRF header on the POSTs): `POST /api/doctor/login` with `{email, password}` → `{"doctor": {id, name, email}}`, or 401 `{"error": "Invalid email or password"}`; failed attempts share the limit in `LOGIN_RATE_LIMIT_*` and then answer 429. `POST /api/doctor/logout` ends the session. `GET /api/doctor/me` → `{"doctor": {...}}`, or `{"doctor": null}` when no doctor is logged in. A browser session is either a patient's or a doctor's: logging in as one ends the other.
+Doctor login (JSON, CSRF header on the POSTs): `POST /api/doctor/login` with `{email, password}` → `{"doctor": {id, name, email}}`, or 401 `{"error": "Invalid email or password"}`; failed attempts share the limit in `LOGIN_RATE_LIMIT_*` and then answer 429. `POST /api/doctor/logout` ends the session. `GET /api/doctor/me` → `{"doctor": {...}}`, or `{"doctor": null}` when no doctor is logged in. A browser session is either a patient's or a doctor's: logging in as one ends the other. `POST /api/guest/login` with `{"role": "doctor"}` or `{"role": "patient"}` logs in as that guest; it answers 404 unless `GUEST_LOGIN=true` and the guest accounts exist.
 
 Nexivo recovery API (JSON, no trailing slash). "Patient or doctor": a logged-in patient reaches only their own `:id` (403 otherwise); a doctor reaches any patient. "Doctor" routes answer 403 to a logged-in patient. Without a login, everything but the config read answers 401. Unsafe methods need the CSRF header. Errors: `400 {"error": "Invalid request", "fields": {...}}`, or `401/403/404/409 {"error": "..."}`.
 
@@ -236,6 +238,7 @@ Variables on the API project:
 - `ALLOWED_HOSTS`: the API's and the frontend's domains.
 - `CSRF_TRUSTED_ORIGINS` and `CORS_ALLOWED_ORIGINS`: `https://` plus the frontend's domain.
 - `DEMO_DOCTOR_PASSWORD`: a strong value. Without it no doctor account is created, and nobody can open the doctor pages.
+- `GUEST_LOGIN=true` to show **Continue as guest** on both login pages.
 - `GROQ_API_KEY` for the AI chat. The SMTP and Twilio values for doctor alerts are optional.
 
 Limits on Vercel: the login and chat rate limits are counted per function instance, so they are weaker than on a single server. Secrets live only in Vercel's variables, never in git.
