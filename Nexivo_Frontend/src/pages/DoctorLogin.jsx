@@ -11,7 +11,7 @@ export default function DoctorLogin() {
     const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const { doctor, loading, loginDoctor } = useAuth();
+    const { doctor, loading, loginDoctor, loginGuest } = useAuth();
     const destination = location.state?.from ?? '/doctor';
 
     const handleSubmit = async (e) => {
@@ -23,6 +23,19 @@ export default function DoctorLogin() {
             navigate(destination, { replace: true });
         } catch (err) {
             setError(err.message || 'Login failed. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const continueAsGuest = async () => {
+        setSubmitting(true);
+        setError('');
+        try {
+            await loginGuest('doctor');
+            navigate(destination, { replace: true });
+        } catch (err) {
+            setError(err.message || 'Guest access failed. Please try again.');
         } finally {
             setSubmitting(false);
         }
@@ -104,6 +117,13 @@ export default function DoctorLogin() {
                             {submitting ? 'Logging in...' : 'Log in'}
                         </Button>
                     </form>
+
+                    <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+                        <p className="text-sm text-gray-600 mb-3">Just looking around? Try the doctor side with made-up patients.</p>
+                        <Button type="button" variant="outline" className="w-full" onClick={continueAsGuest} disabled={submitting}>
+                            Continue as guest doctor
+                        </Button>
+                    </div>
                 </Card>
             </div>
         </div>

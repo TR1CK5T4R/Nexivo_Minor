@@ -98,6 +98,12 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    // Logs in as the guest doctor or guest patient, then loads that user like any login.
+    const loginGuest = async (role) => {
+        await djangoAPI.doctor.loginGuest(role);
+        await checkAuthStatus();
+    };
+
     const logoutDoctor = async () => {
         await djangoAPI.doctor.logout();
         setDoctor(null);
@@ -111,6 +117,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         loginDoctor,
+        loginGuest,
         logoutDoctor,
         isAuthenticated: !!user,
         checkAuthStatus,

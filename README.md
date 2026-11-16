@@ -57,6 +57,8 @@ Open http://localhost:5173.
 
 All demo accounts hold made-up data and are created by `npm run db:demo`.
 
+**As a guest:** with `GUEST_LOGIN=true` set on the backend, both login pages show **Continue as guest**. No password is needed. The guest doctor sees every demo patient, and the guest patient has a recovery history of their own, so guests don't change the demo patients.
+
 **As a patient:** choose **Patient Portal** and log in with a demo account (login checks only the email in this version, so any password works). Then open **My Recovery** or **Daily Check-in** on the dashboard.
 
 | Email                           | Surgery (made up)                    | Recovery status                              |

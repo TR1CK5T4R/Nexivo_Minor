@@ -10,7 +10,7 @@ export default function PatientLogin() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, loginGuest } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -44,6 +44,19 @@ export default function PatientLogin() {
         } catch (err) {
             console.error('Login error caught:', err);
             setError(err.message || 'Login failed. Please check your email or contact your doctor.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const continueAsGuest = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            await loginGuest('patient');
+            navigate('/patient/dashboard');
+        } catch (err) {
+            setError(err.message || 'Guest access failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -138,6 +151,13 @@ export default function PatientLogin() {
                             </p>
                         </div>
                     </form>
+
+                    <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+                        <p className="text-sm text-gray-600 mb-3">Just looking around? Try the patient side with a made-up recovery.</p>
+                        <Button type="button" variant="outline" className="w-full" onClick={continueAsGuest} disabled={loading}>
+                            Continue as guest patient
+                        </Button>
+                    </div>
 
                     {/* Info Card */}
                     <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">

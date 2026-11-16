@@ -35,6 +35,8 @@ After the backend's `npm run db:demo`, each has a recovery history: Knee needs a
 
 For the doctor pages, choose **Doctor Portal** and log in with `demo.doctor@revivecare.test`, password `demo1234`. Every doctor page redirects to that login until you do. If you add a patient there, please use made-up details.
 
+When the backend has `GUEST_LOGIN=true`, both login pages also show **Continue as guest**, which needs no password.
+
 Patient login is **email only** in this version: the password field has to be filled in, but its value isn't checked. Doctor passwords are checked. The exercise pages ask for camera access.
 
 ## Tech stack

@@ -162,6 +162,8 @@ export const doctorAPI = {
     logout: () => unsafeCall('/api/doctor/logout', 'POST'),
     // Returns {doctor}: null when no doctor is logged in.
     getCurrent: () => apiCall('/api/doctor/me'),
+    // "Continue as guest" as the guest doctor or guest patient (role 'doctor' or 'patient').
+    loginGuest: (role) => unsafeCall('/api/guest/login', 'POST', { role }),
 };
 
 // ==================== Chatbot API ====================
