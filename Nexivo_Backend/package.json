@@ -32,6 +32,8 @@
     "groq:smoke": "GROQ_LIVE=1 node scripts/groq-live.js smoke",
     "groq:capture": "GROQ_LIVE=1 node scripts/groq-live.js capture",
     "db:demo": "node scripts/demo-accounts.js",
+    "db:deploy": "npm run db:migrate && npm run db:demo",
+    "vercel-build": "npm run db:deploy && mkdir -p public",
     "db:recompute": "node scripts/recompute-scores.js"
   },
   "dependencies": {

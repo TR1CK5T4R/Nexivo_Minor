@@ -222,19 +222,23 @@ Every query on the request path is an index lookup costing 4–15 µs of databas
 
 ## Deployment
 
-The app runs locally today. These are the notes I wrote for putting it online.
+The live setup is two Vercel projects from this repository, with PostgreSQL on Neon: the frontend (root directory `Nexivo_Frontend`) and this API (root directory `Nexivo_Backend`).
 
-**Recommended setup: one domain.** Serve the built frontend and the API from the same domain behind a reverse proxy (nginx, Caddy or the hosting platform's routing) that sends the API paths (`/csrf/`, `/login/`, `/patient/…`, `/doctor_info`, `/exercise/sessions/`, `/static/`, `/api/`) to Node and everything else to the frontend build. This keeps the session and CSRF cookies simple: both are `SameSite=Lax`, and the frontend reads the CSRF cookie from JavaScript, which only works on the same domain.
+**One domain for the browser.** `Nexivo_Frontend/vercel.json` makes the frontend forward the API paths (`/csrf/`, `/login/`, `/patient/…/`, `/doctor_info`, `/exercise/sessions/`, `/api/`) to the API project and serve the React app for everything else. The browser only ever talks to the frontend's domain, so the session and CSRF cookies stay first-party (`SameSite=Lax`), and the frontend can read the CSRF cookie. Leave `VITE_API_BASE_URL` unset. The exercise videos are served from the frontend's `public/static/`, because Vercel functions can't send files over 4.5 MB.
 
-Production settings:
+**The API on Vercel** runs as one function: `api/index.js` hands over the Express app, and `vercel.json` sends every path to it. `npm run vercel-build` runs the migrations and the demo accounts on each deploy.
 
-- `NODE_ENV=production`, `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` set to the public domain.
-- `TRUST_PROXY` set (e.g. `1`). Without it, Express behind an HTTPS proxy thinks requests are plain HTTP and won't send the secure session cookie, so login would silently fail.
-- HTTP redirected to HTTPS at the proxy (Node itself sends HSTS in production).
-- Secrets (`SESSION_SECRET`, `CSRF_SECRET`, `GROQ_API_KEY`, SMTP and Twilio values) kept in the host's secret settings, never in git.
-- Run `npm run db:migrate` and `npm run db:demo` once against the production database. Set `DEMO_DOCTOR_PASSWORD` to a strong value first, or no doctor account is created and nobody can open the doctor pages.
+Variables on the API project:
 
-Hosting the frontend and API on two different domains would need changes to how the cookies and the CSRF token are delivered; I haven't made those.
+- `NODE_ENV=production` and `TRUST_PROXY=2` (the frontend's proxy, then Vercel's). Without it, Express thinks requests are plain HTTP and won't send the secure session cookie, so login would silently fail.
+- `DATABASE_URL`: Neon's pooled connection string (the `DATABASE_URL` value that `neon init` writes). Each function instance opens its own connections, and the pooler keeps that within Neon's limits.
+- `SESSION_SECRET` and `CSRF_SECRET`: two different random values (`openssl rand -hex 32`).
+- `ALLOWED_HOSTS`: the API's and the frontend's domains.
+- `CSRF_TRUSTED_ORIGINS` and `CORS_ALLOWED_ORIGINS`: `https://` plus the frontend's domain.
+- `DEMO_DOCTOR_PASSWORD`: a strong value. Without it no doctor account is created, and nobody can open the doctor pages.
+- `GROQ_API_KEY` for the AI chat. The SMTP and Twilio values for doctor alerts are optional.
+
+Limits on Vercel: the login and chat rate limits are counted per function instance, so they are weaker than on a single server. Secrets live only in Vercel's variables, never in git.
 
 ## Known limitations
 
